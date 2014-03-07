@@ -40,6 +40,23 @@ __status__ = "Dev"
 
 import argparse
 import sys
+import operator
+import random
+
+from multiprocessing import Pool
+from subprocess import Popen, PIPE
+
+#import os
+#import errno
+
+import numpy as np
+np.seterr(all='raise')
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from mpl_toolkits.mplot3d import axes3d, Axes3D
+from pylab import plot,subplot,axis,stem,show,figure
 
 ###############################################################################
 ###############################################################################
@@ -60,10 +77,16 @@ def doWork(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    #parser.add_argument('positional_arg', help="Required")
-    #parser.add_argument('positional_arg2', type=int, help="Integer argument")
-    #parser.add_argument('positional_arg3', nargs='+', help="Multiple values")
-    #parser.add_argument('-X', '--optional_X', action="store_true", default=False, help="flag")
+    parser.add_argument('-i','--input_file', help="Tab delimited file containing IDs, hits and length")
+    parser.add_argument('-o','--output_file', default = "scatter_plot", help="Output file")
+    parser.add_argument('-f','--image_format', default='png', help="Image format; default: png")
+    parser.add_argument('-d','--dpi', type=int, default=400, help="Set image dpi")
+    parser.add_argument('-t','--master_tax_file', help="Master taxa file containing all img IDs")
+    parser.add_argument('-pt','--plot_title', help="Plot title")
+    parser.add_argument('-pb','--plot_border', type=int, default=1,help="Adjust plot border to fit data")
+    parser.add_argument('-ts','--text_size', type=int, default=2,help="Set text size for x and y labels")
+    parser.add_argument('-sp','--show_plot', default='False',help="Show plot in terminal options: True. default: False")
+    parser.add_argument('-cf','--colour_file', help="Colours file")
 
     # parse the arguments
     args = parser.parse_args()
