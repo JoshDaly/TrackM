@@ -45,7 +45,7 @@ class TemplateClass():
     def sayHi(self):
         print('write some "REAL" code you bum!')
         
-    def doWork( args ):
+    def doWork(self,args):
         """ Main wrapper"""
         
         """make scatter plot from a tab delimited file 
