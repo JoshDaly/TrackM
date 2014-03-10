@@ -46,7 +46,7 @@ import random
 from multiprocessing import Pool
 from subprocess import Popen, PIPE
 
-#import os
+import os
 #import errno
 
 import numpy as np
@@ -68,7 +68,7 @@ def doWork(args):
     # hook into core project code here. For example:
     from trackm.TrackM import TemplateClass
     TC = TemplateClass()
-    TC.sayHi()
+    TC.doWork(args)
 
 ###############################################################################
 ###############################################################################
