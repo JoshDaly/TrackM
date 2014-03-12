@@ -53,6 +53,8 @@ from matplotlib.patches import Rectangle
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 from pylab import plot,subplot,axis,stem,show,figure
 
+from colorsys import hsv_to_rgb as htr
+
 
 
 ###############################################################################
@@ -66,6 +68,13 @@ class TemplateClass():
 
     def sayHi(self):
         print('write some "REAL" code you bum!')
+      
+    def ReturnColours(self,start,count):
+        colour_array = []
+        for i in range(int(start),int(start)+int(count)):
+            colour_array.append('#%02x%02x%02x' % tuple(np.array(htr(float(i)/100.,1,1))*255))
+        return colour_array
+        
         
     def doWork(self,args):
         """ Main wrapper"""
@@ -76,13 +85,14 @@ class TemplateClass():
         # variables
         ids_list = [] # list to store uniquq ids
         unordered_ids_list = [] # contained unordered img Ids 
-        sorted_ids_list = [] # contains IMG IDs ordered according to sorted_master
-        #master_ids_list = [] # 
+        #sorted_ids_list = [] # contains IMG IDs ordered according to sorted_master
+        genome_tree_ids_list = [] # Ordered list of genome tree IDs
+        genome_tree_ids_dict = {} # {genome_tree_id:ladder_position}
         ids_dict = {} # dict to store {id:[[id,hits,length],...]}
-        tax_dict = {} # dict to store {id:tax_string}
-        master_tax = [] #list to store img_ids taxa information
-        sorted_master_tax = [] # Master sorted img IDs by tax string
-        img_sorted_dict = {} # contains img_id -> x coordinate
+        genome_tree_img_dict = {} # dict to store {id:tax_string}
+        #master_tax = [] #list to store img_ids taxa information
+        #sorted_master_tax = [] # Master sorted img IDs by tax string
+        #img_sorted_dict = {} # contains img_id -> x coordinate
         working_ids_list = [] # sorted img_ids 
         plot_border = args.plot_border 
         ordered_tax_string_lowest = [] # store lowest taxonomical information in order
@@ -94,23 +104,35 @@ class TemplateClass():
         Lengths = []
         Hits = []
         
+        #-----
         
         #change arguments into variables
         output_file = args.output_file + ".%s" % (args.image_format)
         image_format = args.image_format
-        
-            
+       
         #-----
+        
+        
         """
-        1/ alphabetically sort img ids by tax string
-        2/ create a master list of img IDs
-        A00000033       637000039       k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhizobiales; f__Brucellaceae; g__Brucella; s__abortus;
-        """
-            
+        1/ create a dictionary containing img_ids -> ladder_position
+        A00000033       637000039       123    taxa_string
+        """ 
+        with open(args.genome_tree_file,"r") as fh:
+            for l in fh:
+                genome_tree_id = l.split('\t')[0].rstrip()
+                img_id = l.split('\t')[1].rstrip()
+                ladder_position = l.split('\t')[2].rstrip()
+                taxa_string = l.split('\t')[3].rstrip()
+                genome_tree_img_dict[img_id] = [ladder_position,genome_tree_id,taxa_string] 
+        #print genome_tree_img_dict
+          
+        """  
         with open(args.master_tax_file, "r") as fh:
             for l in fh:
+                genome_tree_id = l.split('\t')[0].rstrip()
                 img_id = l.split('\t')[1].rstrip()
-                tax_string = l.split('\t')[2].rstrip()
+                genome_tree_img_dict[genome_tree_id] = {img_id:genome_tree_ids_dict[genome_tree_id]}
+                #tax_string = l.split('\t')[2].rstrip()
                 #master_ids_list.append(img_id)
                 master_tax.append(tax_string)
                 tax_dict[img_id] = tax_string
@@ -118,10 +140,12 @@ class TemplateClass():
         # make a dictionary containing img ID and order
         for i, v in enumerate(sorted_master_tax):
             img_sorted_dict[v[0]] = int(i)
-        
+        """
         #-----
         
         #read through file line by line
+        """ genome_tree_id_a    img_id_a    bodysite_a    contig_a    genome_tree_id_b    img_id_b    bodysite_b    contig_b    hits    length"""
+        
         with open(args.input_file, "r") as fh:
             # capture the file header
             header = fh.readline()
@@ -129,47 +153,54 @@ class TemplateClass():
             #read through the file line by line
             for l in fh:
                 # assign each column in line to a variable
-                id_a = l.split('\t')[0]
-                body_site_a = l.split("\t")[1]
-                id_b = l.split('\t')[3]
-                body_site_b = l.split("\t")[4]
-                hits = l.split('\t')[6].rstrip()
-                length = l.split('\t')[7].rstrip()
+                genome_tree_a = l.split('\t')[0]
+                id_a = l.split('\t')[1]
+                body_site_a = l.split("\t")[2]
+                contig_a = l.split("\t")[3]
+                genome_tree_b = l.split('\t')[4]
+                id_b = l.split('\t')[5]
+                body_site_b = l.split("\t")[6]
+                contig_b = l.split("\t")[7]
+                hits = l.split('\t')[8].rstrip()
+                length = l.split('\t')[9].rstrip()
                 Hits.append(int(hits))
                 Lengths.append(int(length))
                 
                 # check to see if key is in hash
                 try:
-                    ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b]
+                    ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]
                 except KeyError:
-                    ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b]}
+                    ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]}
                     #unordered_ids_list.append(img_sorted_dict[id_a])
                     
                 try:                
-                    ids_dict[id_b][id_a] = [int(hits),int(length),body_site_a,body_site_b]  
+                    ids_dict[id_b][id_a] = [int(hits),int(length),body_site_a,body_site_b,contig_b,contig_a]  
                 except KeyError: 
-                    ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_a,body_site_b]}
+                    ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_a,body_site_b,contig_b,contig_a]}
                     #unordered_ids_list.append(img_sorted_dict[id_b])  
                     
             # make ids_list a numpy array
             ids_list= np.array(ids_dict.keys())
             for key in ids_dict.keys():
-                unordered_ids_list.append(img_sorted_dict[key])
+                unordered_ids_list.append(int(genome_tree_img_dict[key][0]))    
             # ordered img_ids  
             working_ids_list = ids_list[np.argsort(unordered_ids_list)]
         
-        #-----
+        
             
+        
+        #-----
+   
         #print out the tax string
         for i in working_ids_list:
-            g = tax_dict[i].split(';')[5] #genus
-            f = tax_dict[i].split(';')[4] #family
-            o = tax_dict[i].split(';')[3] #order
-            c = tax_dict[i].split(';')[2] #class
-            p = tax_dict[i].split(';')[1] #phylum
+            g = genome_tree_img_dict[i][2].split(';')[5] #genus
+            f = genome_tree_img_dict[i][2].split(';')[4] #family
+            o = genome_tree_img_dict[i][2].split(';')[3] #order
+            c = genome_tree_img_dict[i][2].split(';')[2] #class
+            p = genome_tree_img_dict[i][2].split(';')[1] #phylum
             
             ordered_tax_string_phylum.append(p)
-            
+            #print str(i) + "\t" +str(p) + "\t" + str(g) +"\t"+ str(genome_tree_img_dict[i][0])
             if len(g) == 4:
                 if len(f) == 4:
                     if len(o) == 4:
@@ -207,26 +238,34 @@ class TemplateClass():
         val = []
         heatmap_colours = [] # list of colours to be used for the heatmap (scatterplot)
         #BuPu Hex colours
-        "#edf8fb" "#bfd3e6" "#9ebcda" "#8c96c6" "#8c6bb1" "#88419d" "#6e016b"
+        BuPu = "#edf8fb" "#bfd3e6" "#9ebcda" "#8c96c6" "#8c6bb1" "#88419d" "#6e016b"
         #OrRd Hex colours
-        "#fef0d9"    "#fdd49e"    "#fdbb84"    "#fc8d59"  "#ef6548"  "#d7301f"    "#990000"
+        OrRd = "#fef0d9"    "#fdd49e"    "#fdbb84"    "#fc8d59"  "#ef6548"  "#d7301f"    "#990000"
         #blue    #red    #green    #yellow
         "#2600FF"    "#FF0019"  "#51FF00"   "#FFFF00" 
         #Blue
-        "#eff3ff" "#c6dbef" "#9ecae1" "#6baed6" "#4292c6" "#2171b5" "#084594"
+        Blue = ["#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#084594"]
         #Green
-        "#edf8e9" "#c7e9c0" "#a1d99b" "#74c476" "#41ab5d" "#238b45" "#005a32"
+        Green = ["#edf8e9", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#005a32"]
         #Orange
-        "#feedde" "#fdd0a2" "#fdae6b" "#fd8d3c" "#f16913" "#d94801" "#8c2d04"
+        Orange = ["#feedde","#fdd0a2","#fdae6b","#fd8d3c","#f16913", "#d94801", "#8c2d04"]
         #Red
-        "#fee5d9" "#fcbba1" "#fc9272" "#fb6a4a" "#ef3b2c" "#cb181d" "#99000d"
+        Red = ["#fee5d9","#fcbba1","#fc9272","#fb6a4a","#ef3b2c","#cb181d","#99000d"]
         #Black
-        #f7f7f7 #d9d9d9 #bdbdbd #969696 #737373 #525252 #252525
+        Black = ["#f7f7f7","#d9d9d9","#bdbdbd","#969696","#737373","#525252","#252525"]
+        #purple
+        Purple = ["#FFCCCC","#FF99FF","#FF66FF","#FF33FF","#FF00FF","#CC00CC","#990099"]
+        
+        # hits breaks
+        hits_breaks = [0.01,0.1,0.2,0.3,0.4,0.5]
+        #length breaks
+        length_breaks = [0.01,0.05,0.1,0.15,0.25,0.5]
         
         # variables for heatmap
         hits_max = int(max(Hits))
-        length_max = int(max(Lengths))
+        Length_max = int(max(Lengths))
         
+        #-----
         
         # loop over dictionary, to produce x and y
         for x in range(len(working_ids_list)): 
@@ -243,148 +282,148 @@ class TemplateClass():
                         # colour based on body site
                         if fred[working_ids_list[y]][2] == "gut":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#eff3ff")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#c6dbef")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#9ecae1")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#6baed6")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#4292c6")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#2171b5")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#084594")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Red[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Red[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Red[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Red[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Red[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Red[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Red[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#edf8e9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#c7e9c0")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#a1d99b")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#74c476")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#41ab5d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#238b45")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#005a32")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Blue[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Blue[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Blue[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Blue[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Blue[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Blue[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "oral":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#edf8e9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#c7e9c0")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#a1d99b")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#74c476")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#41ab5d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#238b45")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#005a32")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Blue[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Blue[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Blue[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Blue[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Blue[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Blue[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#fee5d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fcbba1")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Green[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Green[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Green[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Green[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Green[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Green[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Green[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[0])
                         if fred[working_ids_list[y]][2] == "both":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.4):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.4) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[1]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[2]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[3]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[4]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                         
                         
                         """
@@ -437,150 +476,151 @@ class TemplateClass():
                         xs.append(y)
                         ys.append(x)
                         
+                        
                         if fred[working_ids_list[y]][2] == "gut":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#eff3ff")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#c6dbef")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#9ecae1")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#6baed6")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#4292c6")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#2171b5")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#084594")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Red[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Red[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Red[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Red[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Red[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Red[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Red[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#edf8e9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#c7e9c0")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#a1d99b")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#74c476")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#41ab5d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#238b45")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#005a32")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Blue[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max* length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Blue[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Blue[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Blue[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Blue[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Blue[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max* length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max* length_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "oral":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#edf8e9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#c7e9c0")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#a1d99b")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#74c476")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#41ab5d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#238b45")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#005a32")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Blue[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Blue[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max* length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Blue[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Blue[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max* length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Blue[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Blue[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#fee5d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#fcbba1")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Green[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Green[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Green[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Green[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Green[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Green[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Green[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "both":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max *length_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * 0.001):
-                                    heatmap_colours.append("#f7f7f7")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.001) and fred[working_ids_list[y]][0] <= (hits_max * 0.01):
-                                    heatmap_colours.append("#d9d9d9")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.01) and fred[working_ids_list[y]][0] <= (hits_max * 0.1):
-                                    heatmap_colours.append("#fc9272")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.1) and fred[working_ids_list[y]][0] <= (hits_max * 0.2):
-                                    heatmap_colours.append("#fb6a4a")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.2) and fred[working_ids_list[y]][0] <= (hits_max * 0.3):
-                                    heatmap_colours.append("#ef3b2c")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.3) and fred[working_ids_list[y]][0] <= (hits_max * 0.5):
-                                    heatmap_colours.append("#cb181d")
-                                elif fred[working_ids_list[y]][0] > (hits_max * 0.5):
-                                    heatmap_colours.append("#99000d")
+                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                    heatmap_colours.append(Purple[0])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
+                                    heatmap_colours.append(Purple[1])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[1]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[2]):
+                                    heatmap_colours.append(Purple[2])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[2]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[3]):
+                                    heatmap_colours.append(Purple[3])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[3]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[4]):
+                                    heatmap_colours.append(Purple[4])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[4]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[5])
+                                elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[5]):
+                                    heatmap_colours.append(Purple[6])
                         
                         
                         """
@@ -681,6 +721,8 @@ class TemplateClass():
         random.shuffle(colours)
         #print colours
         """
+        
+        #-----
         # produce rectangles for each unique taxa string
         for i in subs_ordered_tax_string_phylum:
             #y-axis rectangle
@@ -702,6 +744,9 @@ class TemplateClass():
                    linewidths = 0.1,
                    )
         
+        #draw arbitrary line to differentiate top and bottom triangles
+        plt.plot([0, len(working_ids_list)-1],[0, len(working_ids_list)-1],'k-',lw=0.5,alpha=0.3)
+        
         
         #Plot labels
         plt.xlabel('Cumulative length of contigs (bp)')
@@ -718,7 +763,8 @@ class TemplateClass():
         #Change label names according to taxonomy
         labels = [item.get_text() for item in ax.get_xticklabels()]
         for i,v in enumerate(labels):
-            labels[i] = ordered_tax_string_lowest[i]
+            labels[i] = (ordered_tax_string_lowest[i] + "_" + genome_tree_img_dict[working_ids_list[i]][1])
+            #labels[i] = genome_tree_img_dict[working_ids_list[i]][1]
         ax.set_xticklabels(labels,size=args.text_size)
         ax.set_yticklabels(labels,size=args.text_size)
         

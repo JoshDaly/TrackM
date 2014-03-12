@@ -58,6 +58,8 @@ from matplotlib.patches import Rectangle
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 from pylab import plot,subplot,axis,stem,show,figure
 
+from colorsys import hsv_to_rgb as htr
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -81,7 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('-o','--output_file', default = "scatter_plot", help="Output file")
     parser.add_argument('-f','--image_format', default='png', help="Image format; default: png")
     parser.add_argument('-d','--dpi', type=int, default=400, help="Set image dpi")
-    parser.add_argument('-t','--master_tax_file', help="Master taxa file containing all img IDs")
+    parser.add_argument('-t','--genome_tree_file', help="Genome tree file containing genome tree Id, img Id, genome tree position")
     parser.add_argument('-pt','--plot_title', help="Plot title")
     parser.add_argument('-pb','--plot_border', type=int, default=1,help="Adjust plot border to fit data")
     parser.add_argument('-ts','--text_size', type=int, default=2,help="Set text size for x and y labels")
