@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('-ts','--text_size', type=int, default=2,help="Set text size for x and y labels")
     parser.add_argument('-sp','--show_plot', default='False',help="Show plot in terminal options: True. default: False")
     parser.add_argument('-cf','--colour_file', help="Colours file")
+    parser.add_argument('-m','--img_metadata', help="IMG metadata file")
 
     # parse the arguments
     args = parser.parse_args()

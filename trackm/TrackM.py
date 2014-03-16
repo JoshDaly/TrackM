@@ -103,6 +103,7 @@ class TemplateClass():
         colours = [] #list of colours produced from input colour file
         Lengths = []
         Hits = []
+        metadata_dict = {} #dictionary img_ID -> genome_status
         
         #-----
         
@@ -112,6 +113,20 @@ class TemplateClass():
        
         #-----
         
+        # read in metadata file, and capture Genome status, and scaffold counts with img_id
+        """ img metadata file"""
+        
+        scaffold_count_cutoff = 1000
+        
+        with open(args.img_metadata,"r") as fh:
+            for l in fh:
+                img_id = l.split("\t")[0].rstrip()
+                genome_status = l.split("\t")[2].rstrip()
+                scaffold_count = int(l.split("\t")[61].rstrip())
+                metadata_dict[img_id] = [genome_status,scaffold_count]
+                
+        
+        #-----
         
         """
         1/ create a dictionary containing img_ids -> ladder_position
@@ -165,26 +180,29 @@ class TemplateClass():
                 length = l.split('\t')[9].rstrip()
                 Hits.append(int(hits))
                 Lengths.append(int(length))
+                #print genome_tree_a +"\t" + body_site_a
                 
                 # check to see if key is in hash
-                try:
-                    ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]
-                except KeyError:
-                    ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]}
-                    #unordered_ids_list.append(img_sorted_dict[id_a])
-                    
-                try:                
-                    ids_dict[id_b][id_a] = [int(hits),int(length),body_site_a,body_site_b,contig_b,contig_a]  
-                except KeyError: 
-                    ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_a,body_site_b,contig_b,contig_a]}
-                    #unordered_ids_list.append(img_sorted_dict[id_b])  
-                    
+                if metadata_dict[id_a][1] <scaffold_count_cutoff: #== "Finished":
+                    try:
+                        ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]
+                    except KeyError:
+                        ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]}
+                        #unordered_ids_list.append(img_sorted_dict[id_a])
+                if metadata_dict[id_b][1] <scaffold_count_cutoff: #== "Finished":
+                    try:                
+                        ids_dict[id_b][id_a] = [int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]  
+                    except KeyError: 
+                        ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]}
+                        #unordered_ids_list.append(img_sorted_dict[id_b])  
+                        
             # make ids_list a numpy array
             ids_list= np.array(ids_dict.keys())
             for key in ids_dict.keys():
                 unordered_ids_list.append(int(genome_tree_img_dict[key][0]))    
             # ordered img_ids  
             working_ids_list = ids_list[np.argsort(unordered_ids_list)]
+            #print working_ids_list
         
         
             
@@ -265,6 +283,43 @@ class TemplateClass():
         hits_max = int(max(Hits))
         Length_max = int(max(Lengths))
         
+        #-----
+        """
+        #print header
+        print "\t".join(["genome_tree_id_a",
+                         "img_id_a",
+                         "bodysite_a",
+                         "contig_a",
+                         "genome_tree_id_b",
+                         "img_id_b",
+                         "bodysite_b",
+                         "contig_b",
+                         "hits",
+                         "length"
+                         ])
+        
+        
+        for x in range(len(working_ids_list)):
+            try:
+                jimmy = ids_dict[working_ids_list[x]] # [id_b:[],id_c:[]]...
+                for y in range(x+1, len(working_ids_list)):
+                    try:
+                        print "\t".join([str(genome_tree_img_dict[working_ids_list[x]][1]),
+                                         str(working_ids_list[x]),
+                                         str(jimmy[working_ids_list[y]][2]),
+                                         str(jimmy[working_ids_list[y]][4]),
+                                         str(genome_tree_img_dict[working_ids_list[y]][1]),
+                                         str(working_ids_list[y]),
+                                         str(jimmy[working_ids_list[y]][3]),
+                                         str(jimmy[working_ids_list[y]][5]),
+                                         str(jimmy[working_ids_list[y]][0]),
+                                         str(jimmy[working_ids_list[y]][1])
+                                         ])
+                    except KeyError:
+                        pass
+            except KeyError:
+                pass
+        """ 
         #-----
         
         # loop over dictionary, to produce x and y
@@ -764,6 +819,8 @@ class TemplateClass():
         labels = [item.get_text() for item in ax.get_xticklabels()]
         for i,v in enumerate(labels):
             labels[i] = (ordered_tax_string_lowest[i] + "_" + genome_tree_img_dict[working_ids_list[i]][1])
+            
+        
             #labels[i] = genome_tree_img_dict[working_ids_list[i]][1]
         ax.set_xticklabels(labels,size=args.text_size)
         ax.set_yticklabels(labels,size=args.text_size)

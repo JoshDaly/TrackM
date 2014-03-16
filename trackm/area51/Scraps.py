@@ -100,6 +100,42 @@ def doWork( args ):
                             str(genome_tree_img_dict[key][1]),
                             str(genome_tree_img_dict[key][2])
                             ])
+            
+    #-----
+    #print header
+        print "\t".join(["genome_tree_id_a",
+                         "img_id_a",
+                         "bodysite_a",
+                         "contig_a",
+                         "genome_tree_id_b",
+                         "img_id_b",
+                         "bodysite_b",
+                         "contig_b",
+                         "hits",
+                         "length"
+                         ])
+        
+        for x in range(len(working_ids_list)):
+            try:
+                jimmy = ids_dict[working_ids_list[x]] # [id_b:[],id_c:[]]...
+                for y in range(x+1, len(working_ids_list)):
+                    try:
+                        print "\t".join([str(genome_tree_img_dict[working_ids_list[x]][1]),
+                                         str(working_ids_list[x]),
+                                         str(jimmy[working_ids_list[y]][2]),
+                                         str(jimmy[working_ids_list[y]][4]),
+                                         str(genome_tree_img_dict[working_ids_list[y]][1]),
+                                         str(working_ids_list[y]),
+                                         str(jimmy[working_ids_list[y]][3]),
+                                         str(jimmy[working_ids_list[y]][5]),
+                                         str(jimmy[working_ids_list[y]][0]),
+                                         str(jimmy[working_ids_list[y]][1])
+                                         ])
+                    except KeyError:
+                        pass
+            except KeyError:
+                pass         
+    
 
     """
 # run somethign external in threads
