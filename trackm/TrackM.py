@@ -78,10 +78,7 @@ class TemplateClass():
         
     def doWork(self,args):
         """ Main wrapper"""
-        
-        """make scatter plot from a tab delimited file 
-        img_id_a        contig_a        img_id_b        contig_b        hits    length
-        """
+
         # variables
         ids_list = [] # list to store uniquq ids
         unordered_ids_list = [] # contained unordered img Ids 
@@ -104,6 +101,7 @@ class TemplateClass():
         Lengths = []
         Hits = []
         metadata_dict = {} #dictionary img_ID -> genome_status
+        contigs_dict = {} #dictionary img_id -> [contig, contig_length]
         
         #-----
         
@@ -113,19 +111,20 @@ class TemplateClass():
        
         #-----
         
+        """Scaffold count cutoff"""
         # read in metadata file, and capture Genome status, and scaffold counts with img_id
         """ img metadata file"""
-        
+        """
         scaffold_count_cutoff = 1000
-        
+    
         with open(args.img_metadata,"r") as fh:
             for l in fh:
                 img_id = l.split("\t")[0].rstrip()
                 genome_status = l.split("\t")[2].rstrip()
                 scaffold_count = int(l.split("\t")[61].rstrip())
                 metadata_dict[img_id] = [genome_status,scaffold_count]
-                
-        
+        """
+                        
         #-----
         
         """
@@ -171,41 +170,50 @@ class TemplateClass():
                 genome_tree_a = l.split('\t')[0]
                 id_a = l.split('\t')[1]
                 body_site_a = l.split("\t")[2]
-                contig_a = l.split("\t")[3]
-                genome_tree_b = l.split('\t')[4]
-                id_b = l.split('\t')[5]
-                body_site_b = l.split("\t")[6]
-                contig_b = l.split("\t")[7]
-                hits = l.split('\t')[8].rstrip()
-                length = l.split('\t')[9].rstrip()
+                genome_tree_b = l.split('\t')[3]
+                id_b = l.split('\t')[4]
+                body_site_b = l.split("\t")[5]
+                hits = l.split('\t')[6].rstrip()
+                length = l.split('\t')[7].rstrip()
                 Hits.append(int(hits))
                 Lengths.append(int(length))
                 #print genome_tree_a +"\t" + body_site_a
+
+                try:
+                    ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b]
+                except KeyError:
+                    ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b]}
+                try:                
+                    ids_dict[id_b][id_a] = [int(hits),int(length),body_site_b,body_site_a]  
+                except KeyError: 
+                    ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_b,body_site_a]}
                 
+                """
                 # check to see if key is in hash
-                if metadata_dict[id_a][1] <scaffold_count_cutoff: #== "Finished":
-                    try:
-                        ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]
-                    except KeyError:
-                        ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]}
+                #if metadata_dict[id_a][1] <scaffold_count_cutoff: #== "Finished":
+                try:
+                    ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]
+                except KeyError:
+                    ids_dict[id_a] = {id_b:[int(hits),int(length),body_site_a,body_site_b,contig_a,contig_b]}
                         #unordered_ids_list.append(img_sorted_dict[id_a])
-                if metadata_dict[id_b][1] <scaffold_count_cutoff: #== "Finished":
-                    try:                
-                        ids_dict[id_b][id_a] = [int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]  
-                    except KeyError: 
-                        ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]}
+                #if metadata_dict[id_b][1] <scaffold_count_cutoff: #== "Finished":
+                try:                
+                    ids_dict[id_b][id_a] = [int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]  
+                except KeyError: 
+                    ids_dict[id_b] = {id_a:[int(hits),int(length),body_site_b,body_site_a,contig_b,contig_a]}
                         #unordered_ids_list.append(img_sorted_dict[id_b])  
-                        
+                """
+                   
             # make ids_list a numpy array
             ids_list= np.array(ids_dict.keys())
             for key in ids_dict.keys():
                 unordered_ids_list.append(int(genome_tree_img_dict[key][0]))    
             # ordered img_ids  
             working_ids_list = ids_list[np.argsort(unordered_ids_list)]
-            #print working_ids_list
+            #print working_ids_list 
         
-        
-            
+        #for i in working_ids_list:
+        #    print i
         
         #-----
    
@@ -262,17 +270,25 @@ class TemplateClass():
         #blue    #red    #green    #yellow
         "#2600FF"    "#FF0019"  "#51FF00"   "#FFFF00" 
         #Blue
-        Blue = ["#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#084594"]
+        Blue = ["#2171b5", "#2171b5", "#2171b5", "#2171b5", "#2171b5", "#2171b5", "#2171b5"]
+        #Blue = ["#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#084594"]
         #Green
-        Green = ["#edf8e9", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#005a32"]
+        Green = ["#238b45", "#238b45", "#238b45", "#238b45", "#238b45", "#238b45", "#238b45"]
+        #Green = ["#edf8e9", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#005a32"]
         #Orange
-        Orange = ["#feedde","#fdd0a2","#fdae6b","#fd8d3c","#f16913", "#d94801", "#8c2d04"]
+        Orange = ["#d94801","#d94801","#d94801","#d94801","#d94801", "#d94801", "#d94801"]
+        #Orange = ["#feedde","#fdd0a2","#fdae6b","#fd8d3c","#f16913", "#d94801", "#8c2d04"]
         #Red
-        Red = ["#fee5d9","#fcbba1","#fc9272","#fb6a4a","#ef3b2c","#cb181d","#99000d"]
+        Red = ["#cb181d","#cb181d","#cb181d","#cb181d","#cb181d","#cb181d","#cb181d"]
+        #Red = ["#fee5d9","#fcbba1","#fc9272","#fb6a4a","#ef3b2c","#cb181d","#99000d"]
         #Black
-        Black = ["#f7f7f7","#d9d9d9","#bdbdbd","#969696","#737373","#525252","#252525"]
+        Black = ["#525252","#525252","#525252","#525252","#525252","#525252","#525252"]
+        #Black = ["#f7f7f7","#d9d9d9","#bdbdbd","#969696","#737373","#525252","#252525"]
         #purple
-        Purple = ["#FFCCCC","#FF99FF","#FF66FF","#FF33FF","#FF00FF","#CC00CC","#990099"]
+        Purple = ["#CC00CC","#CC00CC","#CC00CC","#CC00CC","#CC00CC","#CC00CC","#CC00CC"]
+        #Purple = ["#FFCCCC","#FF99FF","#FF66FF","#FF33FF","#FF00FF","#CC00CC","#990099"]
+        #Zero colour
+        zero = "white"
         
         # hits breaks
         hits_breaks = [0.01,0.1,0.2,0.3,0.4,0.5]
@@ -337,7 +353,9 @@ class TemplateClass():
                         # colour based on body site
                         if fred[working_ids_list[y]][2] == "gut":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Red[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Red[1])
@@ -353,7 +371,9 @@ class TemplateClass():
                                     heatmap_colours.append(Red[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Blue[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Blue[1])
@@ -369,7 +389,9 @@ class TemplateClass():
                                     heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -385,7 +407,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "oral":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Blue[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Blue[1])
@@ -401,7 +425,9 @@ class TemplateClass():
                                     heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Green[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Green[1])
@@ -417,7 +443,9 @@ class TemplateClass():
                                     heatmap_colours.append(Green[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -433,7 +461,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[0])
                         if fred[working_ids_list[y]][2] == "both":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -449,7 +479,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -465,7 +497,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]):
+                                if fred[working_ids_list[y]][0] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][0] > (hits_max * hits_breaks[0]) and fred[working_ids_list[y]][0] <= (hits_max * hits_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -534,7 +568,9 @@ class TemplateClass():
                         
                         if fred[working_ids_list[y]][2] == "gut":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Red[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Red[1])
@@ -550,7 +586,9 @@ class TemplateClass():
                                     heatmap_colours.append(Red[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Blue[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max* length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Blue[1])
@@ -566,7 +604,9 @@ class TemplateClass():
                                     heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -582,7 +622,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "oral":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Blue[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Blue[1])
@@ -598,7 +640,9 @@ class TemplateClass():
                                     heatmap_colours.append(Blue[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Green[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Green[1])
@@ -614,7 +658,9 @@ class TemplateClass():
                                     heatmap_colours.append(Green[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -630,7 +676,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                         if fred[working_ids_list[y]][2] == "both":
                             if fred[working_ids_list[y]][3] == "gut":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -646,7 +694,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "oral":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -662,7 +712,9 @@ class TemplateClass():
                                     heatmap_colours.append(Purple[6])
                                     
                             elif fred[working_ids_list[y]][3] == "both":
-                                if fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]):
+                                if fred[working_ids_list[y]][1] == 0:
+                                    heatmap_colours.append(zero)
+                                elif fred[working_ids_list[y]][1] <= (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] > 0:
                                     heatmap_colours.append(Purple[0])
                                 elif fred[working_ids_list[y]][1] > (Length_max * length_breaks[0]) and fred[working_ids_list[y]][1] <= (Length_max * length_breaks[1]):
                                     heatmap_colours.append(Purple[1])
@@ -795,7 +847,7 @@ class TemplateClass():
                    marker='s',
                    alpha=1,
                    c=heatmap_colours,
-                   edgecolors = 'grey',
+                   edgecolors = 'white',
                    linewidths = 0.1,
                    )
         

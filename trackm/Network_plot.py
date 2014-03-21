@@ -47,6 +47,7 @@ from subprocess import Popen, PIPE
 #import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import axes3d, Axes3D
 #from pylab import plot,subplot,axis,stem,show,figure
+import networkx as nx
 
 
 ###############################################################################
@@ -74,17 +75,10 @@ returns (stdout, stderr)
 def doWork( args ):
     """ Main wrapper"""
     
-    while open(args.input_file,"r") as fh:
-        for l in fh:
-            img_id = l.split('\t')[0].rstrip()
-            k = l.split('\t')[1].rstrip()
-            p = l.split('\t')[2].rstrip()
-            c = l.split('\t')[3].rstrip()
-            f = l.split('\t')[4].rstrip()
-            g = l.split('\t')[5].rstrip()
-            s = l.split('\t')[6].rstrip()
-            body_site = l.split('\t')[7].rstrip()
-            
+    # create an empty graph with no nodes and no edges
+    G=nx.Graph()
+    
+    
     
             
             
