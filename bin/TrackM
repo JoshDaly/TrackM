@@ -92,6 +92,14 @@ if __name__ == '__main__':
     #parser.add_argument('-m','--img_metadata', help="IMG metadata file")
     #parser.add_argument('-c','--contigs_file', help="gut_oral_contigs.csv")
     #parser.add_argument('-cs','--contig_size', type=int, default=0, help="Set contig size cutoff")
+    parser.add_argument('-p1','--phyla_1', help="phyla file")
+    parser.add_argument('-p2','--phyla_2', help="phyla file")
+    parser.add_argument('-p3','--phyla_3', help="phyla file")
+    parser.add_argument('-p4','--phyla_4', help="phyla file")
+    parser.add_argument('-p5','--phyla_5', help="phyla file")
+    parser.add_argument('-p6','--phyla_6', help="phyla file")
+    parser.add_argument('-p7','--phyla_7', help="phyla file")
+    
 
     # parse the arguments
     args = parser.parse_args()

@@ -110,7 +110,56 @@ class TemplateClass():
         image_format = args.image_format
        
         #-----
+        #variables to store phyla lists
+        intra_phyla = 0 
+        hits_accumulative = 0
         
+        firmicutes = {}
+        actionbacteria = {}
+        synergistes = {}
+        epsilon_proteobacteruia = {} 
+        fusobacteria = {}
+        bacteroidetes = {}
+        gamma_proteobacteria = {} 
+        
+        # read in the pylum files
+        #1
+        with open(args.phyla_1,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                firmicutes[id] = 1
+                
+        #2
+        with open(args.phyla_2,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                actionbacteria[id] = 1
+        #3
+        with open(args.phyla_3,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                synergistes[id] = 1
+        #4
+        with open(args.phyla_4,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                epsilon_proteobacteruia[id] = 1
+        #5
+        with open(args.phyla_5,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                fusobacteria[id] = 1
+        #6
+        with open(args.phyla_6,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                bacteroidetes[id] = 1
+        #7
+        with open(args.phyla_7,"r") as fh:
+            for l in fh:
+                id = l.rstrip()
+                gamma_proteobacteria[id] = 1
+        #-----
         """Scaffold count cutoff"""
         # read in metadata file, and capture Genome status, and scaffold counts with img_id
         """ img metadata file"""
@@ -178,6 +227,23 @@ class TemplateClass():
                 Hits.append(int(hits))
                 Lengths.append(int(length))
                 #print genome_tree_a +"\t" + body_site_a
+                
+                hits_accumulative = int(hits) + hits_accumulative
+                
+                if genome_tree_a in firmicutes and genome_tree_b not in firmicutes:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in actionbacteria and genome_tree_b not in actionbacteria:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in synergistes and genome_tree_b not in synergistes:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in epsilon_proteobacteruia and genome_tree_b not in epsilon_proteobacteruia:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in fusobacteria and genome_tree_b not in fusobacteria:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in bacteroidetes and genome_tree_b not in bacteroidetes:
+                    intra_phyla = int(hits) + intra_phyla
+                elif genome_tree_a in gamma_proteobacteria and genome_tree_b not in gamma_proteobacteria:
+                    intra_phyla = int(hits) + intra_phyla
 
                 try:
                     ids_dict[id_a][id_b] = [int(hits),int(length),body_site_a,body_site_b]
@@ -211,6 +277,10 @@ class TemplateClass():
             # ordered img_ids  
             working_ids_list = ids_list[np.argsort(unordered_ids_list)]
             #print working_ids_list 
+        
+        #print intra_phyla_total
+        print "intra_phyla: " + str(intra_phyla)
+        print "hits accumulative: " + str(hits_accumulative)
         
         #for i in working_ids_list:
         #    print i
@@ -871,7 +941,9 @@ class TemplateClass():
         labels = [item.get_text() for item in ax.get_xticklabels()]
         for i,v in enumerate(labels):
             labels[i] = (ordered_tax_string_lowest[i] + "_" + genome_tree_img_dict[working_ids_list[i]][1])
-            
+        
+        #for i in working_ids_list:
+        #    print genome_tree_img_dict[i][1]    
         
             #labels[i] = genome_tree_img_dict[working_ids_list[i]][1]
         ax.set_xticklabels(labels,size=args.text_size)
