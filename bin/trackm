@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+###############################################################################
+#                                                                             #
+#    trackm                                                                   #
+#                                                                             #
+#    Main entry point for th the trackm software                              #
+#                                                                             #
+#    Copyright (C) Josh Daly, Michael Imelfort                                #
+#                                                                             #
+###############################################################################
+#                                                                             #
+#    This program is free software: you can redistribute it and/or modify     #
+#    it under the terms of the GNU General Public License as published by     #
+#    the Free Software Foundation, either version 3 of the License, or        #
+#    (at your option) any later version.                                      #
+#                                                                             #
+#    This program is distributed in the hope that it will be useful,          #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of           #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            #
+#    GNU General Public License for more details.                             #
+#                                                                             #
+#    You should have received a copy of the GNU General Public License        #
+#    along with this program. If not, see <http://www.gnu.org/licenses/>.     #
+#                                                                             #
+###############################################################################
+
+__author__ = "Josh Daly, Michael Imelfort"
+__copyright__ = "Copyright 2014"
+__credits__ = ["Josh Daly", "Michael Imelfort"]
+__license__ = "GPLv3"
+__version__ = "0.0.1"
+__maintainer__ = "Josh Daly"
+__email__ = "joshua.daly@uqconnect.edu.au"
+__status__ = "Dev"
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+# system imports
+import argparse
+import sys
+
+# local imports
+from trackm.worker import Worker
+from trackm.server import Server
+from trackm.view import View
+from trackm.exceptions import *
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+def doWork(args):
+    """ Main wrapper"""
+    if(args.subparser_name == 'server'):
+        try:
+            port = args.port
+        finally:
+            port = None
+
+        # create an instance of the server
+        S = Server(args.db,
+                   port)
+        if args.serv_parser_name == "importJobs":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Importing new jobs..." % (__version__)
+            print "*******************************************************************************"
+            S.importNewJobs(args.jobs, args.paths)
+
+        elif args.serv_parser_name == "process":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Running as processing server..." % (__version__)
+            print "*******************************************************************************"
+            try:
+                bs = args.batches
+            except: pass
+            finally:
+                if bs is None:
+                    bs = []
+            S.beginProcessing(args.queue, batches=bs, numWorkers=args.numWorkers)
+
+        elif args.serv_parser_name == "daemon":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Running as daemon..." % (__version__)
+            print "*******************************************************************************"
+            S.runAsDaemon()
+
+        else:
+            print "ERROR: Unknown option '%s' for mode 'server'" % args.serv_parser_name
+
+    elif(args.subparser_name == 'worker'):
+        """Create a TrackM worker and compare some Genomes!"""
+        print "*******************************************************************************"
+        print " [[TrackM %s]] Running as comparison worker..." % (__version__)
+        print "*******************************************************************************"
+        W = Worker(args.gPath1,
+                   args.gPath2,
+                   args.workID,
+                   args.url,
+                   args.port)
+        W.compareGenomes()
+
+    elif(args.subparser_name == 'view'):
+        # set up a TrackM view instance
+        V = View(args.url,
+                 args.port)
+        print "*******************************************************************************"
+        print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
+        print "*******************************************************************************"
+        try:
+            V.connect()
+            V.plotSomething()
+        except:
+            raise TM_ConnectionException("Could not connect to server (%s) on port: %s" % (args.url, args.port))
+    else:
+        print "ERROR: Unknown mode '%s'" % args.subparser_name
+
+def printHelp():
+    print '''\
+
+             ...::: TrackM :::...
+
+      Track HGT across species boundaries
+
+   -----------------------------------------
+                version: %s
+   -----------------------------------------
+
+    trackm server   -> Create a TrackM server to handle DB creation and I/O requests
+    trackm worker   -> Utilities for creation of pairwise genome comparisons
+    trackm view     -> Utilities for visualising HGT events and stats
+
+    USE: trackm OPTION -h to see detailed options
+    ''' % __version__
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(add_help=False)
+    subparsers = parser.add_subparsers(help="--", dest='subparser_name')
+
+    #-------------------------------------------------
+    #-------------------------------------------------
+    # Deploy a TrackM server ( has four modes )
+    server_parser = subparsers.add_parser('server',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                          help='Create a TrackM server to handle DB creation and I/O requests',
+                                          description='Create a TrackM server to handle DB creation and I/O requests')
+
+    serv_subparsers = server_parser.add_subparsers(help="--", dest='serv_parser_name')
+
+    #-------------------------------------------------
+    # Import new jobs into the data base (create if necessary)
+    import_parser = serv_subparsers.add_parser('importJobs',
+                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                               help='Import new jobs into the data base',
+                                               description='Import new jobs into the data base')
+    import_parser.add_argument("db", help="Path to the TrackM database to use / create")
+    import_parser.add_argument("jobs", help="File containing jobs to import")
+    import_parser.add_argument("paths", help="File linking contig IDs to paths")
+
+    #-------------------------------------------------
+    # Process selected outstanding jobs
+    process_parser = serv_subparsers.add_parser('process',
+                                                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                                help='Process selected outstanding jobs',
+                                                description='Process selected outstanding jobs')
+    process_parser.add_argument("db", help="Path to the TrackM database to use")
+    process_parser.add_argument("queue", help="Information about the queue(s) to lodge jobs to")
+    process_parser.add_argument("-p", "--port", type=int, default=None, help="Port to listen on")
+    process_parser.add_argument("-n", "--numWorkers", type=int, default=1, help="Process only particular job batches")
+    process_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular job batches [-1 for all batches]")
+
+    #-------------------------------------------------
+    # Run as a daemon to serve an instance of TrackM view etc...
+    daemon_parser = serv_subparsers.add_parser('daemon',
+                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                               help='Run as a daemon to serve an instance of TrackM view etc...',
+                                               description='Run as a daemon to serve an instance of TrackM view etc...')
+    daemon_parser.add_argument("db", help="Path to the TrackM database to use")
+    daemon_parser.add_argument("-p", "--port", type=int, default=None, help="Port to listen on")
+
+    #-------------------------------------------------
+    #-------------------------------------------------
+    # Use a TrackM worker client to compare genomes
+    worker_parser = subparsers.add_parser('worker',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                          help='Utilities for creation of pairwise genome comparisons',
+                                          description='Utilities for creation of pairwise genome comparisons')
+    worker_parser.add_argument("gPath1", help="Path to first genome fasta")
+    worker_parser.add_argument("gPath2", help="Path to first second fasta")
+    worker_parser.add_argument("workID", type=int, help="Work ID for this task")
+    worker_parser.add_argument("url", type=int, help="URL of the TrackM server")
+    worker_parser.add_argument("port", type=int, help="Port the server is listening on")
+
+    #-------------------------------------------------
+    #-------------------------------------------------
+    # TrackM plotting utilities
+    view_parser = subparsers.add_parser('view',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                        help='Utilities for visualising HGT events and stats',
+                                        description='Utilities for visualising HGT events and stats')
+    view_parser.add_argument("url", type=int, help="URL of the TrackM server")
+    view_parser.add_argument("port", type=int, help="Port the server is listening on")
+
+    #-------------------------------------------------
+    # get and check options
+    args = None
+    if(len(sys.argv) == 1):
+        printHelp()
+        sys.exit(0)
+    elif(sys.argv[1] == '-v' or sys.argv[1] == '--version'):
+        print "BamTyper: version %s %s %s" % (__version__, __copyright__, __author__)
+        sys.exit(0)
+    elif(sys.argv[1] == '-h' or sys.argv[1] == '--help'):
+        printHelp()
+        sys.exit(0)
+    else:
+        args = parser.parse_args()
+
+    # profiling happens here. If you'd like to track the speed your code runs at
+    # then set the following to True and voila!
+    if(False):
+        import cProfile
+        cProfile.run('doWork(args)', 'profile')
+        ##########################################
+        ##########################################
+        # Use this in python console!
+        #import pstats
+        #p = pstats.Stats('prof')
+        #p.sort_stats('cumulative').print_stats(10)
+        #p.sort_stats('time').print_stats(10)
+        ##########################################
+        ##########################################
+    else:
+        doWork(args)
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+

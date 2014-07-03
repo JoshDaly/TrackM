@@ -1,11 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ###############################################################################
 #                                                                             #
-#    TrackM                                                         #
+#    view.py                                                                  #
 #                                                                             #
-#    Description!!                                                            #
+#    The View class handles all TrackM based visualisations.                  #
+#    NOTE: This class expects a TrackM server to be running in 'daemon' mode. #
+#    when it is started.                                                      #
 #                                                                             #
-#    Copyright (C) Josh Daly                                                  #
+#    Copyright (C) Josh Daly, Michael Imelfort                                #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -24,7 +26,7 @@
 #                                                                             #
 ###############################################################################
 
-__author__ = "Josh Daly"
+__author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly"]
 __license__ = "GPLv3"
@@ -38,55 +40,41 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
-import argparse
-import sys
+# system imports
+
+# local imports
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
-def doWork(args):
-    """Wrapper function to allow easy profiling"""
-    # hook into core project code here. For example:
-    from trackm.TrackM import TemplateClass
-    TC = TemplateClass()
-    TC.sayHi()
+class View(object):
+    def __init__(self,
+                 serverURL,         # URL of the commanding TrackM server
+                 serverPort         # port of the commanding TrackM server
+                 ):
+        self.serverURL = serverURL
+        self.serverPort = serverPort
+
+    def connect(self):
+        """Try connect to the TrackM server"""
+        pass
+
+    def plotSomething(self):
+        """Place holder"""
+        # an example entry point from the main TrackM entry point
+        # Ideally, you should have a separate plot function
+        # defined for each type of plot.
+
+        # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
+        from inspect import currentframe, getframeinfo
+        frameinfo = getframeinfo(currentframe())
+        print "Make me plot something! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
+        # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    #parser.add_argument('positional_arg', help="Required")
-    #parser.add_argument('positional_arg2', type=int, help="Integer argument")
-    #parser.add_argument('positional_arg3', nargs='+', help="Multiple values")
-    #parser.add_argument('-X', '--optional_X', action="store_true", default=False, help="flag")
-
-    # parse the arguments
-    args = parser.parse_args()
-
-    # profiling happens here. If you'd like to track the speed your code runs at
-    # then set the following to True and voila!
-    if(False):
-        import cProfile
-        cProfile.run('doWork(args)', 'profile')
-        ##########################################
-        ##########################################
-        # Use this in python console!
-        #import pstats
-        #p = pstats.Stats('prof')
-        #p.sort_stats('cumulative').print_stats(10)
-        #p.sort_stats('time').print_stats(10)
-        ##########################################
-        ##########################################
-    else:
-        doWork(args)
-
-###############################################################################
-###############################################################################
-###############################################################################
-###############################################################################
-

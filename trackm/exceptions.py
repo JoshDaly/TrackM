@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 ###############################################################################
 #                                                                             #
-#    TrackM.py                                                         #
+#    exceptions.py                                                            #
 #                                                                             #
-#    Description!!                                                            #
+#    All the exceptions we'd like to raise.                                   #
 #                                                                             #
-#    Copyright (C) Josh Daly                                                  #
+#    Copyright (C) Michael Imelfort                                           #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -24,13 +24,13 @@
 #                                                                             #
 ###############################################################################
 
-__author__ = "Josh Daly"
+__author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
-__credits__ = ["Josh Daly"]
+__credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
 __version__ = "0.0.1"
-__maintainer__ = "Josh Daly"
-__email__ = "joshua.daly@uqconnect.edu.au"
+__maintainer__ = "Michael Imelfort"
+__email__ = "mike@mikeimelfort.com"
 __status__ = "Dev"
 
 ###############################################################################
@@ -38,59 +38,20 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
-class TemplateClass():
-    """Utilities wrapper"""
-    def __init__(self): pass
+class TM_Exception(BaseException): pass
 
-    def sayHi(self):
-        print('write some "REAL" code you bum!')
+#------------------------------------------------------------------------------
+# SHELL  -- deal with failure of calling external applications like Nucmer etc.
+class TM_ShellException(TM_Exception): pass
+class TM_ExternalProgramFailedException(TM_ShellException): pass
 
-    def demoStuff(self):
+#------------------------------------------------------------------------------
+# COMMS  -- deal with failure to communicate with the server
+class TM_CommsException(TM_Exception): pass
+class TM_ConnectionException(TM_CommsException): pass
 
-        """
-        # parse a file
-        try:
-            with open(filename, "r") as fh:
-                for line in fh:
-                    print line
-        except:
-            print "Error opening file:", filename, exc_info()[0]
-            raise
-        """
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 
-        """
-        fig = plt.figure()
-
-        #-----
-        # make a 3d plot
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(points[:,0],
-                   points[:,1],
-                   points[:,2],
-                   #edgecolors='none',
-                   #c=colors,
-                   #s=2,
-                   #marker='.'
-                   )
-
-        #-----
-        # make a 2d plot
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(points[:,0],
-                points[:,1],
-                '*g')
-
-        #-----
-        # show figure
-        plt.show()
-        # or save figure
-        plt.savefig(filename,dpi=300,format='png')
-
-        #-----
-        # clean up!
-        plt.close(fig)
-        del fig
-        """
-
-        return 0
