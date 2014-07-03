@@ -38,7 +38,17 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
-class DP_Exception(BaseException): pass
+class TM_Exception(BaseException): pass
+
+#------------------------------------------------------------------------------
+# SHELL  -- deal with failure of calling external applications like Nucmer etc.
+class TM_ShellException(TM_Exception): pass
+class TM_ExternalProgramFailedException(TM_ShellException): pass
+
+#------------------------------------------------------------------------------
+# COMMS  -- deal with failure to communicate with the server
+class TM_CommsException(TM_Exception): pass
+class TM_ConnectionException(TM_CommsException): pass
 
 ###############################################################################
 ###############################################################################

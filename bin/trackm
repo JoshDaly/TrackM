@@ -43,9 +43,10 @@ import argparse
 import sys
 
 # local imports
-from trackmWorker.worker import Worker
-from trackmServer.server import Server
-from trackmView.view import View
+from trackm.worker import Worker
+from trackm.server import Server
+from trackm.view import View
+from trackm.exceptions import *
 
 ###############################################################################
 ###############################################################################
@@ -55,11 +56,46 @@ from trackmView.view import View
 def doWork(args):
     """ Main wrapper"""
     if(args.subparser_name == 'server'):
+        try:
+            port = args.port
+        finally:
+            port = None
+
+        # create an instance of the server
         S = Server(args.db,
-                   args.port)
+                   port)
+        if args.serv_parser_name == "importJobs":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Importing new jobs..." % (__version__)
+            print "*******************************************************************************"
+            S.importNewJobs(args.jobs, args.paths)
+
+        elif args.serv_parser_name == "process":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Running as processing server..." % (__version__)
+            print "*******************************************************************************"
+            try:
+                bs = args.batches
+            except: pass
+            finally:
+                if bs is None:
+                    bs = []
+            S.beginProcessing(args.queue, batches=bs, numWorkers=args.numWorkers)
+
+        elif args.serv_parser_name == "daemon":
+            print "*******************************************************************************"
+            print " [[TrackM %s]] Running as daemon..." % (__version__)
+            print "*******************************************************************************"
+            S.runAsDaemon()
+
+        else:
+            print "ERROR: Unknown option '%s' for mode 'server'" % args.serv_parser_name
 
     elif(args.subparser_name == 'worker'):
         """Create a TrackM worker and compare some Genomes!"""
+        print "*******************************************************************************"
+        print " [[TrackM %s]] Running as comparison worker..." % (__version__)
+        print "*******************************************************************************"
         W = Worker(args.gPath1,
                    args.gPath2,
                    args.workID,
@@ -68,7 +104,17 @@ def doWork(args):
         W.compareGenomes()
 
     elif(args.subparser_name == 'view'):
-        V =
+        # set up a TrackM view instance
+        V = View(args.url,
+                 args.port)
+        print "*******************************************************************************"
+        print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
+        print "*******************************************************************************"
+        try:
+            V.connect()
+            V.plotSomething()
+        except:
+            raise TM_ConnectionException("Could not connect to server (%s) on port: %s" % (args.url, args.port))
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
 
@@ -103,7 +149,7 @@ if __name__ == '__main__':
                                           help='Create a TrackM server to handle DB creation and I/O requests',
                                           description='Create a TrackM server to handle DB creation and I/O requests')
 
-    serv_subparsers = server_parser.add_subparsers(help="--", dest='subparser_name')
+    serv_subparsers = server_parser.add_subparsers(help="--", dest='serv_parser_name')
 
     #-------------------------------------------------
     # Import new jobs into the data base (create if necessary)
@@ -124,8 +170,8 @@ if __name__ == '__main__':
     process_parser.add_argument("db", help="Path to the TrackM database to use")
     process_parser.add_argument("queue", help="Information about the queue(s) to lodge jobs to")
     process_parser.add_argument("-p", "--port", type=int, default=None, help="Port to listen on")
-    process_parser.add_argument("-b", "--batch", type=int, default=-1, help="Process only particular job batches [-1 for all batches]")
     process_parser.add_argument("-n", "--numWorkers", type=int, default=1, help="Process only particular job batches")
+    process_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular job batches [-1 for all batches]")
 
     #-------------------------------------------------
     # Run as a daemon to serve an instance of TrackM view etc...

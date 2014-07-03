@@ -40,6 +40,9 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
+# system imports
+
+# local imports
 
 ###############################################################################
 ###############################################################################
@@ -54,9 +57,22 @@ class View(object):
         self.serverURL = serverURL
         self.serverPort = serverPort
 
+    def connect(self):
+        """Try connect to the TrackM server"""
+        pass
+
     def plotSomething(self):
         """Place holder"""
-        print "Make ME! I live at File: %s Line: %s" % (__FILE__, __LINE__)
+        # an example entry point from the main TrackM entry point
+        # Ideally, you should have a separate plot function
+        # defined for each type of plot.
+
+        # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
+        from inspect import currentframe, getframeinfo
+        frameinfo = getframeinfo(currentframe())
+        print "Make me plot something! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
+        # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+
 
 ###############################################################################
 ###############################################################################

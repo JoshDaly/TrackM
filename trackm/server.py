@@ -42,6 +42,9 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
+# system imports
+
+# local imports
 
 ###############################################################################
 ###############################################################################
@@ -55,6 +58,25 @@ class Server(object):
                  ):
         self.port = port
         self.dbFileName = dbFileName
+
+    def importNewJobs(self,
+                      jobs,     # csv containing information about new jobs to process
+                      paths     # absolute paths to new genome fasta files referenced in jobs
+                      ):
+        print "Importing new jobs from: %s" % jobs
+        print "Import full contig file paths from: %s" % paths
+
+    def beginProcessing(self,
+                        queue,
+                        batches=[],
+                        numWorkers=1):
+        """process any specified outstanding jobs"""
+        print "Processing outstanding jobs"
+
+    def runAsDaemon(self):
+        """Run in the background and serve requests for TrackM view etc"""
+        pass
+
 
 ###############################################################################
 ###############################################################################

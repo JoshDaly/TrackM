@@ -43,7 +43,12 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
-from trackmCore.hit import Hit
+# system imports
+from sys import exc_info
+
+# local imports
+from trackm.hit import Hit
+from trackm.exceptions import *
 
 ###############################################################################
 ###############################################################################
@@ -72,15 +77,25 @@ class Worker(object):
         """Do the work of pairwise comparison of genomes"""
         try:
             # this is the jumping off point for the comparison pipeline
-            # already established in other TrackM scripts
+            # already established in other TrackM scripts. Code inserted here should
+            # resemble a pipeline that calls other functions defined in this class
+
+            # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
+            from inspect import currentframe, getframeinfo
+            frameinfo = getframeinfo(currentframe())
+            print "Insert comparison code in here!! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
+            # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+
+            # once all the comparisons are done invoke phoneHome to send results back to the server
             self.phoneHome()
-        except e:
+        except:
             # catch all exception, if anything goes wrong in the
             # comparison stage and we fail to catch it then we
             # can catch it here and return the exception to the
             # controlling server, that way it will know that the
             # job was aborted.
-            self.phoneHome(exception=e)
+            print exc_info()[0]
+            self.phoneHome(exception=exc_info()[0])
 
     def phoneHome(self,
                   exception=None):
