@@ -10,10 +10,10 @@ setup(
                'trackmServer',
                'trackmView',
                'trackmWorker'],
-    scripts=['bin/TrackM'],
+    scripts=['bin/trackm'],
     url='http://pypi.python.org/pypi/TrackM/',
     license='GPLv3',
-    description='TrackM',
+    description='TrackM - track HGT in microbial genomes',
     long_description=open('README.md').read(),
     install_requires=[],
 )
