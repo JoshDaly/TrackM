@@ -43,7 +43,7 @@ __TRACKM_DB_VERSION__ = "1.0.0"
 # system imports
 
 # local imports
-from dancingpeasant.DancingPeasant import BaseFile
+from dancingPeasant.baseFile import BaseFile
 
 ###############################################################################
 ###############################################################################
@@ -58,7 +58,6 @@ class TrackMDB(BaseFile):
     def createNewFile(self,
                       fileName,             # name of the new file
                       force=False,          # should we check to see if this is a wise move?
-                      verbose=False         # how much chitter do we want?
                       ):
         """Create a new TrackM database file"""
         # make a basic file
@@ -66,19 +65,25 @@ class TrackMDB(BaseFile):
                                fileName,
                                type="TrackM_DB",
                                version=__TRACKM_DB_VERSION__,
-                               force=force,
-                               verbose=verbose)
+                               force=force)
 
         # add TrackM specific tables
+        self._addTable("paths",                             # information about the location of genome files
+                       {
+                        "gid" : "TEXT",                     # genomeTree compatible ID for genome 1 (primary key)
+                        "path" : "TEXT"                     # absolute path to fasta file
+                       },
+                       force=True)
+
         self._addTable("jobs",                              # information about comparisons to make
                        {
                         "pid" : "INT",                      # unique ID describing this pair (primary key)
-                        "gid_1" : "TEXT",                   # genomeTree compatible ID for genome 1 (primary key)
-                        "gid_2" : "TEXT",                   # genomeTree compatible ID for genome 2 (gid_2 > gid_1) (primary key)
+                        "gid_1" : "TEXT",                   # genomeTree compatible ID for genome 1 (foreign key)
+                        "gid_2" : "TEXT",                   # genomeTree compatible ID for genome 2 (gid_2 > gid_1) (foreign key)
                         "ani_1" : "REAL",                   # ANI from gid_1 -> gid_2
                         "ani_2" : "REAL",                   # ANI from gid_2 -> gid_1
-                        "tree_ident" : "REAL",              # GTDB (83 marker) identity
-                        "16S_ident" : "REAL",               # 16S pairwise identity
+                        "ident_tree" : "REAL",              # GTDB (83 marker) identity
+                        "ident_16S" : "REAL",               # 16S pairwise identity
                         "batch" : "INT",                    # batch processed in
                         "processed" : "INT"                 # has been processed?
                        },
