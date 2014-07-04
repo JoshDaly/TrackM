@@ -45,6 +45,8 @@ __status__ = "Dev"
 
 # system imports
 from sys import exc_info
+import os
+import shutil
 
 # local imports
 from trackm.hit import Hit
@@ -54,6 +56,49 @@ from trackm.exceptions import *
 ###############################################################################
 ###############################################################################
 ###############################################################################
+
+class NucMerParser:
+    """Wrapper class for parsing nucmer output"""
+    # constants to make the code more readable
+    _START_1  = 0
+    _END_1    = 1
+    _START_2  = 2
+    _END_2    = 3
+    _LEN_1    = 4
+    _LEN_2    = 5
+    _IDENTITY = 6
+    _ID_1     = 7
+    _ID_2     = 8
+
+    def __init__(self):
+        self.prepped = False
+
+    def reset(self):
+        self.prepped = False
+
+    def readNuc(self, fp):
+        """Read through a nucmer coords file
+
+        this is a generator function
+        """
+        line = None # this is a buffer keeping the last unprocessed line
+        while True: # mimic closure; is it a bad idea?
+            if not self.prepped:
+                # we still need to strip out the header
+                    for l in fp: # search for the first record
+                        
+                        if l[0] == '=': # next line is good
+                            self.prepped = True
+                            break
+            # file should be prepped now
+            for l in fp:
+                fields = l.split('|')
+                yield ([int(i) for i in fields[0].split()] +
+                       [int(i) for i in fields[1].split()] +
+                       [int(i) for i in fields[2].split()] +
+                       [float(i) for i in fields[3].split()] +
+                       fields[4].split())
+            break # done!
 
 class Worker(object):
     def __init__(self,
@@ -71,7 +116,7 @@ class Worker(object):
 
         # this dictionary will store all the results of the analysis
         # essentially it will be a list of Hit instances
-        self.results = []
+        self.results = {}
 
     def compareGenomes(self):
         """Do the work of pairwise comparison of genomes"""
@@ -80,60 +125,24 @@ class Worker(object):
             # already established in other TrackM scripts. Code inserted here should
             # resemble a pipeline that calls other functions defined in this class
             
-            subgrp = 1000
-
-            # make sure the out dir exists
-            if not os.path.exists(args.out_dir):
-                os.makedirs(args.out_dir)    
+            # make the tmp directory using workID
+            os.mkdir("/tmp/trackm/%s" % self.workID)
             
-            """Read through tab-delimited file containing pairwise comparisons to be run"""
-            pool = Pool(args.num_threads)
-            count = 0 # counter for checkpoint of runtime
-            cmds = [[]]
-            stdouts = []
-        
-            with open(args.genome_comparisons) as fh: 
-                """ ID_1         ID_2         %IDENTITY
-                    2500069000    2501799900    93.58
-                """
-                header = fh.readline()
-                counter = 0 
-                for l in fh:
-                    fields = l.rstrip().split("\t")
-                    #cmds[-1].append("nucmer %s.fna %s.fna --mum --coords -p %s.gen > /%s" % (fields[0], fields[1], "%sv%s" %(fields[0],fields[1]), args.out_dir))
-                    fasta1 = os.path.join(args.fasta_dir, "%s.%s" % (fields[0], args.fasta_suffix))
-                    fasta2 = os.path.join(args.fasta_dir, "%s.%s" % (fields[1], args.fasta_suffix))
-                    nucmer_prefix = os.path.join(args.out_dir, "%sv%s.gen" %(fields[0],fields[1]))
-                    
-                    cmds[-1].append("nucmer %s %s --mum --coords -p %s" % (fasta1,
-                                                                           fasta2,
-                                                                           nucmer_prefix)
-                                    )
-                    #cmds[-1].append("echo %s" %("%s %s %s" %(fasta1, fasta2, nucmer_prefix)))
-                    counter += 1
-                    if counter >= subgrp:
-                        cmds.append([])
-                        counter = 0
+            # move into tmp space 
+            os.chdir("/tmp/trackm/%s" % self.workID)
             
-            print "start", datetime.datetime.now()
-            for sub_cmds in cmds:
-                stdouts.append(pool.map(runCommand, sub_cmds))            # list of tuples [(stdout, stderr)]
-                print "%d done" % subgrp, datetime.datetime.now()
+            # run pairwise nucmer instance
+            os.system("nucmer %s %s --mum --coords -p %s" % (self.gPath1,self.gPath2,self.workID))
             
-            print "finish", datetime.datetime.now()
+            # parse nucmer .coords file
+            self.getHitData()
             
-            print "writing stdouts"
-            for (out, err) in stdouts[0]:
-                err_file = "%s.txt" % err.split('/')[2].split('.')[0]
-                with open(os.path.join(args.out_dir, err_file), 'w') as err_fh:
-                    for line in err:
-                        err_fh.write(line)
-
-            # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
-            from inspect import currentframe, getframeinfo
-            frameinfo = getframeinfo(currentframe())
-            print "Insert comparison code in here!! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
-            # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+            # Nuke tmp output directory
+            #shutil.rmtree("/tmp/trackm/%s" % self.workID)
+            
+            # print out results
+            for hit in self.results:
+                print hit
 
             # once all the comparisons are done invoke phoneHome to send results back to the server
             self.phoneHome()
@@ -145,6 +154,30 @@ class Worker(object):
             # job was aborted.
             print exc_info()[0]
             self.phoneHome(exception=exc_info()[0])
+            
+    def getHitData(self):
+        # read in nucmer coords file
+        NP = NucMerParser()
+        with open('/tmp/trackm/%s' % self.workID, 'r') as fh:
+            for hit in NP.readNuc(fh):
+                # apply filter >500bp and >99% 
+                #if hit[NP._IDENTITY] > 99 and hit[NP._LEN_1] > 500 and hit[NP._LEN_2] > 500:
+                try:
+                    self.results[self.workID] += [hit[NP._START_1],
+                                                  hit[NP._END_1],
+                                                  hit[NP._START_2].
+                                                  hit[NP._END_2],
+                                                  hit[NP._LEN_1],
+                                                  hit[NP._LEN_2],
+                                                  hit[NP._IDENTITY]]
+                except KeyError:
+                    self.results[self.workID] = [hit[NP._START_1],
+                                                  hit[NP._END_1],
+                                                  hit[NP._START_2].
+                                                  hit[NP._END_2],
+                                                  hit[NP._LEN_1],
+                                                  hit[NP._LEN_2],
+                                                  hit[NP._IDENTITY]]
 
     def phoneHome(self,
                   exception=None):
