@@ -146,7 +146,7 @@ class Worker(object):
 
             # once all the comparisons are done invoke phoneHome to send results back to the server
             self.phoneHome()
-        except:
+        except Exception:
             # catch all exception, if anything goes wrong in the
             # comparison stage and we fail to catch it then we
             # can catch it here and return the exception to the

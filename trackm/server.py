@@ -45,6 +45,7 @@ __status__ = "Dev"
 # system imports
 
 # local imports
+from trackm.importInterface import ImportInterface
 
 ###############################################################################
 ###############################################################################
@@ -65,6 +66,17 @@ class Server(object):
                       ):
         print "Importing new jobs from: %s" % jobs
         print "Import full contig file paths from: %s" % paths
+
+        # get an interface to the file
+        II = ImportInterface(self.dbFileName)
+
+        # import paths first
+        with open(paths, "r") as paths_fh:
+            II.importGenomes(paths_fh)
+
+        # import genomes next
+        with open(jobs, "r") as jobs_fh:
+            II.importJobs(jobs_fh)
 
     def beginProcessing(self,
                         queue,

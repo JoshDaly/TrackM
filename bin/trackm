@@ -58,7 +58,7 @@ def doWork(args):
     if(args.subparser_name == 'server'):
         try:
             port = args.port
-        finally:
+        except:
             port = None
 
         # create an instance of the server
