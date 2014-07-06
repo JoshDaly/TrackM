@@ -45,6 +45,8 @@ __status__ = "Dev"
 
 # system imports
 from sys import exc_info
+import os
+import shutil
 
 # local imports
 from trackm.hit import Hit
@@ -54,6 +56,49 @@ from trackm.exceptions import *
 ###############################################################################
 ###############################################################################
 ###############################################################################
+
+class NucMerParser:
+    """Wrapper class for parsing nucmer output"""
+    # constants to make the code more readable
+    _START_1  = 0
+    _END_1    = 1
+    _START_2  = 2
+    _END_2    = 3
+    _LEN_1    = 4
+    _LEN_2    = 5
+    _IDENTITY = 6
+    _ID_1     = 7
+    _ID_2     = 8
+
+    def __init__(self):
+        self.prepped = False
+
+    def reset(self):
+        self.prepped = False
+
+    def readNuc(self, fp):
+        """Read through a nucmer coords file
+
+        this is a generator function
+        """
+        line = None # this is a buffer keeping the last unprocessed line
+        while True: # mimic closure; is it a bad idea?
+            if not self.prepped:
+                # we still need to strip out the header
+                    for l in fp: # search for the first record
+                        
+                        if l[0] == '=': # next line is good
+                            self.prepped = True
+                            break
+            # file should be prepped now
+            for l in fp:
+                fields = l.split('|')
+                yield ([int(i) for i in fields[0].split()] +
+                       [int(i) for i in fields[1].split()] +
+                       [int(i) for i in fields[2].split()] +
+                       [float(i) for i in fields[3].split()] +
+                       fields[4].split())
+            break # done!
 
 class Worker(object):
     def __init__(self,
@@ -71,7 +116,7 @@ class Worker(object):
 
         # this dictionary will store all the results of the analysis
         # essentially it will be a list of Hit instances
-        self.results = []
+        self.results = {}
 
     def compareGenomes(self):
         """Do the work of pairwise comparison of genomes"""
@@ -79,12 +124,25 @@ class Worker(object):
             # this is the jumping off point for the comparison pipeline
             # already established in other TrackM scripts. Code inserted here should
             # resemble a pipeline that calls other functions defined in this class
-
-            # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
-            from inspect import currentframe, getframeinfo
-            frameinfo = getframeinfo(currentframe())
-            print "Insert comparison code in here!! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
-            # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+            
+            # make the tmp directory using workID
+            os.mkdir("/tmp/trackm/%s" % self.workID)
+            
+            # move into tmp space 
+            os.chdir("/tmp/trackm/%s" % self.workID)
+            
+            # run pairwise nucmer instance
+            os.system("nucmer %s %s --mum --coords -p %s" % (self.gPath1,self.gPath2,self.workID))
+            
+            # parse nucmer .coords file
+            self.getHitData()
+            
+            # Nuke tmp output directory
+            #shutil.rmtree("/tmp/trackm/%s" % self.workID)
+            
+            # print out results
+            for hit in self.results:
+                print hit
 
             # once all the comparisons are done invoke phoneHome to send results back to the server
             self.phoneHome()
@@ -96,6 +154,30 @@ class Worker(object):
             # job was aborted.
             print exc_info()[0]
             self.phoneHome(exception=exc_info()[0])
+            
+    def getHitData(self):
+        # read in nucmer coords file
+        NP = NucMerParser()
+        with open('/tmp/trackm/%s' % self.workID, 'r') as fh:
+            for hit in NP.readNuc(fh):
+                # apply filter >500bp and >99% 
+                #if hit[NP._IDENTITY] > 99 and hit[NP._LEN_1] > 500 and hit[NP._LEN_2] > 500:
+                try:
+                    self.results[self.workID] += [hit[NP._START_1],
+                                                  hit[NP._END_1],
+                                                  hit[NP._START_2].
+                                                  hit[NP._END_2],
+                                                  hit[NP._LEN_1],
+                                                  hit[NP._LEN_2],
+                                                  hit[NP._IDENTITY]]
+                except KeyError:
+                    self.results[self.workID] = [hit[NP._START_1],
+                                                  hit[NP._END_1],
+                                                  hit[NP._START_2].
+                                                  hit[NP._END_2],
+                                                  hit[NP._LEN_1],
+                                                  hit[NP._LEN_2],
+                                                  hit[NP._IDENTITY]]
 
     def phoneHome(self,
                   exception=None):
