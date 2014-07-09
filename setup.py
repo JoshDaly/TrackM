@@ -13,7 +13,7 @@ setup(
     long_description=open('README.md').read(),
     install_requires=[
         "jsonpickle >= 0.7.1",
-        "DancingPeasant >= 0.01"
+        "DancingPeasant >= 0.1.0"
         "pyzmq >= 14.3.1"
     ],
 )
