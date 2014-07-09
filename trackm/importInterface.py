@@ -164,8 +164,6 @@ class ImportInterface(Interface):
             # for each new hit
 
             # work out if we'e seen the contigs before or make a new entry
-            if hits[i].contig1 == "repeated":
-                print 'REPEAT!'
             try:
                 cid1 = contigHeaders[hits[i].contig1]
             except KeyError:

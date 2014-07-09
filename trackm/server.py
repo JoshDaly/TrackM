@@ -109,7 +109,7 @@ class ProcessListener(object):
         self.resultQueue = resultQueue
         self.id = id
         self.command = self.makeSGE(id, gPath1, gPath2, ani)
-        print self.command
+        #print self.command
         #print "L [%d] : listener made" % self.id
 
         # create a worker

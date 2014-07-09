@@ -2,6 +2,14 @@
 CHANGES.txt
 LICENSE.txt
 setup.py
-bin/TrackM
-trackm/TrackM.py
+bin/trackm
 trackm/__init__.py
+trackm/db.py
+trackm/exceptions.py
+trackm/hit.py
+trackm/importInterface.py
+trackm/server.py
+trackm/sge.py
+trackm/view.py
+trackm/viewInterface.py
+trackm/worker.py
