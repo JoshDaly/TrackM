@@ -28,7 +28,7 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
 __status__ = "Dev"
@@ -42,6 +42,7 @@ __status__ = "Dev"
 import sys
 
 # local includes
+from dancingPeasant.exceptions import *
 from dancingPeasant.interface import Interface
 from trackm.db import TrackMDB
 import csv
@@ -80,6 +81,8 @@ class ImportInterface(Interface):
             self.gids = dict(zip([gid[0] for gid in gids], [True] * len(gids)))
         else:
             self.gids = {}
+            # we've jst created this database so set all the meta counts to -1
+            self.insert('ids', ['sqid', 'hid', 'cid', 'oid'], [tuple([-1]*4)])
 
         # skip comment lines
         dr = csv.DictReader((row for row in genomesFileHandle if not row.startswith('#')), delimiter="\t")
@@ -93,8 +96,8 @@ class ImportInterface(Interface):
             self.insert("paths", ["gid", "path"], to_db)
         self.disconnect()
 
-    def importJobs(self, jobsFileHandle):
-        """Import new jobs into the TrackM DB"""
+    def importPairs(self, pairsFileHandle):
+        """Import new pairs into the TrackM DB"""
         # get existing genomes
         if self.gids is None:
             self.getGids()
@@ -103,11 +106,11 @@ class ImportInterface(Interface):
 
         self.connect()
         # skip comment lines
-        dr = csv.DictReader((row for row in jobsFileHandle if not row.startswith('#')), delimiter="\t")
+        dr = csv.DictReader((row for row in pairsFileHandle if not row.startswith('#')), delimiter="\t")
         dr.fieldnames = "pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"
 
-        # we will set processed to 0
-        to_db = [(row["pid"], row["gid_1"], row["gid_2"], row["ani_1"], row["ani_2"], row["batch"], 0)
+        # we will set ani to -1
+        to_db = [(row["pid"], row["gid_1"], row["gid_2"], row["ani_1"], row["ani_2"], row["batch"], -1)
                  for row in dr]
 
         # work out now if there are any pairs which have no reference in the paths table
@@ -116,29 +119,149 @@ class ImportInterface(Interface):
             if row[1] in self.gids and row[2] in self.gids:
                 to_db_b.append(row)
             else:
-                sys.stderr.write("Warning: unknown GIDS in job %s\n" %str(row))
+                sys.stderr.write("Warning: unknown GIDS in pair %s\n" %str(row))
 
         gid_pairs = {}
         to_db = []
-        existing_jobs = self.select('jobs', ['gid_1', 'gid_2'])
+        existing_pairs = self.select('pairs', ['gid_1', 'gid_2'])
 
-        if len(existing_jobs) > 0:
-            for job in existing_jobs:
-                print job
-                gid_pairs["%s|%s" % (job[0], job[1])] = True
+        if len(existing_pairs) > 0:
+            for pair in existing_pairs:
+                print pair
+                gid_pairs["%s|%s" % (pair[0], pair[1])] = True
             print gid_pairs
             for row in to_db_b:
                 this_pair = "%s|%s" % (row[1], row[2])
                 if this_pair not in gid_pairs:
                     to_db.append(row)
                 else:
-                    sys.stderr.write("Warning: Duplicate job: (Compare: %s to %s)\n" % tuple(this_pair.split("|")))
+                    sys.stderr.write("Warning: Duplicate pair: (Compare: %s to %s)\n" % tuple(this_pair.split("|")))
         else:
             to_db = to_db_b
 
         if len(to_db) > 0:
-            self.insert("jobs", ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch", "processed"], to_db)
+            self.insert("pairs", ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch", "ani_comp"], to_db)
         self.disconnect()
+
+    def importHits(self,
+                   contigHeaders,   # dict of type {header -> cid}
+                   hits,            # list of hit and other information returned from TrackM worker
+                   ):
+        """Add the new hits to the DB
+
+        hits is a list structured like this:
+
+        [pid, ani_comp, <trackm.hit.Hit object>, <trackm.hit.Hit object>, ...]
+        """
+        self.connect()
+        sqid, hid, cid, oid = self.getHighestIds()
+        pid = hits[0]
+        ani_comp = hits[1]
+        to_db = []
+        new_contigs = []
+        new_seqs = []
+        for i in range(2, len(hits)):
+            # for each new hit
+
+            # work out if we'e seen the contigs before or make a new entry
+            if hits[i].contig1 == "repeated":
+                print 'REPEAT!'
+            try:
+                cid1 = contigHeaders[hits[i].contig1]
+            except KeyError:
+                # new contig!
+                cid += 1
+                cid1 = cid
+                contigHeaders[hits[i].contig1] = cid1
+                new_contigs.append((cid, "%s" % hits[i].contig1))
+
+            try:
+                cid2 = contigHeaders[hits[i].contig2]
+            except KeyError:
+                # new contig!
+                cid += 1
+                cid2 = cid
+                contigHeaders[hits[i].contig2] = cid2
+                new_contigs.append((cid, "%s" % hits[i].contig2))
+
+            # we know the seqs are new
+            sqid += 1
+            sqid1 = sqid
+            new_seqs.append((sqid1, hits[i].seq1))
+            sqid += 1
+            sqid2 = sqid
+            new_seqs.append((sqid2, hits[i].seq2))
+
+            # new hid and add!
+            hid += 1
+
+            # make a tuple for the add
+            to_db.append(tuple([hid,
+                                pid,
+                                cid1,
+                                hits[i].start1,
+                                hits[i].len1,
+                                hits[i].strand1,
+                                sqid1,
+                                cid2,
+                                hits[i].start2,
+                                hits[i].len2,
+                                hits[i].strand2,
+                                sqid2,
+                                hits[i].identity]
+                               )
+                         )
+
+        # insert the hits
+        self.insert("hits", ["hid", "pid", "cid_1", "start_1", "len_1", "strand_1", "sqid_1", "cid_2", "start_2", "len_2", "strand_2", "sqid_2", "ident"], to_db)
+
+        # insert the ani_comp into the pairs table to say that this pair has been processed
+        self.updateSingle("pairs", ["ani_comp"], ["%0.2f"% ani_comp], condition="pid='%d'"%pid)
+
+        # insert the new contigs
+        self.insert('contigs', ["cid", "header"], new_contigs)
+
+        # insert the new sequences
+        self.insert('seqs', ["sqid", "seq"], new_seqs)
+
+        # update Id counts
+        self.updateIds(sqid, hid, cid, oid)
+
+        self.disconnect()
+
+#------------------------------------------------------------------------------
+# Handling IDs
+
+    def updateIds(self, sqid, hid, cid, oid):
+        """Update the values of the highest Ids for certain primary keys"""
+        disconnect = True
+        try:
+            self.connect()
+        except DP_FileAlreadyOpenException:
+            # sometimes called from within a connect block
+            disconnect = False
+
+        self.updateSingle('ids', ['sqid', 'hid', 'cid', 'oid'], tuple([sqid, hid, cid, oid]))
+
+        if disconnect:
+            self.disconnect()
+
+    def getHighestIds(self):
+        """Get the values of the highest Ids for certain primary keys"""
+        disconnect = True
+        try:
+            self.connect()
+        except DP_FileAlreadyOpenException:
+            # sometimes called from within a connect block
+            disconnect = False
+
+        ids = self.select('ids', ['sqid', 'hid', 'cid', 'oid'])
+
+        if disconnect:
+            self.disconnect()
+
+        return ids[0]
+
 
 ###############################################################################
 ###############################################################################

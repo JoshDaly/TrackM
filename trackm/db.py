@@ -28,7 +28,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly"]
 __license__ = "GPLv3"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -68,6 +68,15 @@ class TrackMDB(BaseFile):
                                force=force)
 
         # add TrackM specific tables
+        self._addTable("ids",                               # housekeeping information about highest ids
+                       {
+                        "sqid" : "INT",                     # highest sqid in the seqs table (-1 for None)
+                        "hid" : "INT",                      # highest hid in the hits table (-1 for None)
+                        "cid" : "INT",                      # highest cid in the contigs table (-1 for None)
+                        "oid" : "INT",                      # highest oid in the orfs table (-1 for None)
+                       },
+                       force=True)
+
         self._addTable("paths",                             # information about the location of genome files
                        {
                         "gid" : "TEXT",                     # genomeTree compatible ID for genome 1 (primary key)
@@ -75,7 +84,7 @@ class TrackMDB(BaseFile):
                        },
                        force=True)
 
-        self._addTable("jobs",                              # information about comparisons to make
+        self._addTable("pairs",                             # information about comparisons to make
                        {
                         "pid" : "INT",                      # unique ID describing this pair (primary key)
                         "gid_1" : "TEXT",                   # genomeTree compatible ID for genome 1 (foreign key)
@@ -85,18 +94,20 @@ class TrackMDB(BaseFile):
                         "ident_tree" : "REAL",              # GTDB (83 marker) identity
                         "ident_16S" : "REAL",               # 16S pairwise identity
                         "batch" : "INT",                    # batch processed in
-                        "processed" : "INT"                 # has been processed?
+                        "ani_comp" : "REAL"                 # which ani has this pair been processed as?
                        },
                        force=True)
 
         self._addTable("hits",                              # information about hits between genome pairs
                        {
-                        "pid" : "INT",                      # pair ID from jobs table (foreign key)
                         "hid" : "INT",                      # unique ID for this hit (primary key)
+                        "pid" : "INT",                      # pair ID from pairs table (foreign key)
+                        "cid_1" : "INT",                    # ID of the contig for this hit
                         "start_1" : "INT",                  # start position for this hit in gid_1
                         "len_1" : "INT",                    # length of this hit in gid_1
                         "strand_1" : "INT",                 # strand of the hit in gid_1
                         "sqid_1" : "INT",                   # sequence ID for this hit from seqs table (foreign key)
+                        "cid_2" : "TEXT",
                         "start_2" : "INT",
                         "len_2" : "INT",
                         "strand_2" : "INT",
@@ -105,11 +116,24 @@ class TrackMDB(BaseFile):
                        },
                        force=True)
 
+        self._addTable("contigs",                           # store contig headers once
+                       {
+                        "cid" : "INT",                      # unique ID for this contig (primary key)
+                        "header" : "TEXT",                  # contig header
+                       },
+                       force=True)
+
+        self._addTable("seqs",                              # information about orfs found on hits
+                       {
+                        "sqid" : "INT",                     # unique ID for this sequence (primary key)
+                        "seq" : "TEXT",                     # nucelotide sequence
+                       },
+                       force=True)
+
         self._addTable("orfs",                              # information about orfs found on hits
                        {
                         "oid" : "INT",                      # unique ID for this orf (primary key)
-                        "hid" : "INT",                      # hit ID for this orf from in hits table (foreign key)
-                        "gid" : "INT",                      # genome ID for this orf from jobs table (foreign key)
+                        "sqid" : "INT",                     # hit ID for this orf from in hits table (foreign key)
                         "start" : "INT",                    # start of the ORF
                         "len" : "INT",                      # length of the orf
                         "strand" : "INT",                   # strand of the orf
@@ -142,13 +166,6 @@ class TrackMDB(BaseFile):
                         "hit_1" : "TEXT",                   # best hit
                         "hit_1" : "TEXT",                   # second best hit
                         "hit_1" : "TEXT"                    # third best hit
-                       },
-                       force=True)
-
-        self._addTable("seqs",                              # sequences
-                       {
-                        "sqid" : "INT",                     # unique ID for this sequence (primary key)
-                        "seq" : "TEXT",                     # the sequence
                        },
                        force=True)
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 ###############################################################################
 #                                                                             #
-#    hit.py                                                                   #
+#    viewInterface.py                                                         #
 #                                                                             #
-#    Class for storing information about a single pairwise hit                #
+#    Read only Interface for accessing data in a TrackM DB                    #
 #                                                                             #
 #    Copyright (C) Michael Imelfort                                           #
 #                                                                             #
@@ -38,80 +38,78 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
-import random
-import string
+# system includes
+import sys
+import numpy as np
+
+# local includes
+from dancingPeasant.interface import Interface
+from trackm.db import TrackMDB
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
-class Hit(object):
-    """Simple storage class"""
+class ViewInterface(Interface):
+    """Use this interface for querying the TrackM DB"""
+
     def __init__(self,
-                 contig1=None,
-                 start1=None,
-                 len1=None,
-                 strand1=None,
-                 seq1=None,
-                 contig2=None,
-                 start2=None,
-                 len2=None,
-                 strand2=None,
-                 seq2=None,
-                 identity=None
+                 dbFileName,        # file name to connect to
+                 verbosity=-1       # turn off all DP chatter
                  ):
-         self.contig1 = contig1
-         self.start1 = start1
-         self.len1 = len1
-         self.strand1 = strand1
-         self.seq1 = seq1
-         self.contig2 = contig2
-         self.start2 = start2
-         self.len2 = len2
-         self.strand2 = strand2
-         self.seq2 = seq2
-         self.identity = identity
+        Interface.__init__(self, dbFileName, verbosity)
+        self.db = TrackMDB(verbosity=verbosity)
 
-    def createRandom(self):
-        """fill this hit with random values"""
-        self.start1 = random.randint(0,5000)
-        self.len1 = random.randint(0,200)
-        self.strand1 = random.randint(0,1)
-        self.seq1 = "".join([['A','C','G','T'][random.randint(0,3)] for _ in range(self.len1)])
-
-        self.contig2 = "".join([string.ascii_letters[random.randint(0,51)] for _ in range(100)])
-        self.start2 = random.randint(0,5000)
-        self.len2 = random.randint(0,200)
-        self.strand2 = random.randint(0,1)
-        self.seq2 = "".join([['A','C','G','T'][random.randint(0,3)] for _ in range(self.len2)])
-
-        self.identity = float(random.randint(0,100))/100.
-
-        # just to test contig header storage
-        if random.randint(0,99) > 97:
-            self.contig1 = "repeated"
+    def getOutstandingPairs(self, aniCut=95., batch=None):
+        """Get all the outstanding pairs based on batch and ani cutoff"""
+        self.connect()
+        # get all the outstanding pairs
+        if batch is None:
+            all_pairs = self.select('pairs', ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"], "ani_comp = '-1'")
         else:
-            self.contig1 = "".join([string.ascii_letters[random.randint(0,51)] for _ in range(100)])
+            all_pairs = self.select('pairs', ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"], "ani_comp = '-1' and batch = '%s'" % batch)
+        gids = self.select('paths', ['gid', 'path'])
+        self.disconnect()
+        gids = dict(gids)
+        vetted_pairs = []
+        seen_gids = {}
+        for pair in all_pairs:
+            highest_ani = np.max([pair[3], pair[4]])
+            if highest_ani <= aniCut:
+                # pair is OK
+                vetted_pairs.append((pair[0], gids[pair[1]], gids[pair[2]], pair[5], highest_ani))
+        return vetted_pairs
 
+    def getGids(self):
+        """Get a list of all the GIDs"""
+        self.connect()
+        gids = self.select('paths', ['gid', 'path'])
+        self.disconnect()
+        # unwrap these guys
+        self.gids = dict(zip([gid[0] for gid in gids], [True] * len(gids)))
+        return self.gids
 
-    def __str__(self):
-        return "\t".join([str(i) for i in [self.contig1,
-                                           self.start1,
-                                           self.len1,
-                                           self.strand1,
-                                           self.seq1,
-                                           self.contig2,
-                                           self.start2,
-                                           self.len2,
-                                           self.strand2,
-                                           self.seq2,
-                                           self.identity
-                                           ]
-                          ]
-                         )
+    def getGenomePaths(self):
+        """Get a dict of type {gid -> path}"""
+        self.connect()
+        paths = self.select('paths', ["gid", "path"])
+        self.disconnect()
+        if len(paths) == 0:
+            return {}
+        return dict(paths)
+
+    def getContigHeaders(self):
+        """Get a dict of type {'header' -> cid}"""
+        self.connect()
+        headers = self.select('contigs', ['header', 'cid'])
+        self.disconnect()
+        if len(headers) == 0:
+            return {}
+        return dict(headers)
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
+

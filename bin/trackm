@@ -28,7 +28,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly", "Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -64,13 +64,15 @@ def doWork(args):
         # create an instance of the server
         S = Server(args.db,
                    port)
-        if args.serv_parser_name == "importJobs":
+        if args.serv_parser_name == "importPairs":
             print "*******************************************************************************"
-            print " [[TrackM %s]] Importing new jobs..." % (__version__)
+            print " [[TrackM %s]] Importing new pairs..." % (__version__)
             print "*******************************************************************************"
-            S.importNewJobs(args.jobs, args.paths)
+            S.importNewPairs(args.pairs, args.paths)
 
-        elif args.serv_parser_name == "process":
+        elif args.serv_parser_name == "makeHits":
+            # processing happenin'
+            # process outstanding hits
             print "*******************************************************************************"
             print " [[TrackM %s]] Running as processing server..." % (__version__)
             print "*******************************************************************************"
@@ -80,7 +82,11 @@ def doWork(args):
             finally:
                 if bs is None:
                     bs = []
-            S.beginProcessing(args.queue, batches=bs, numWorkers=args.numWorkers)
+            S.makeHits(args.queue, args.commsPort, args.portRange, batches=bs)
+
+        elif args.serv_parser_name == "progress":
+            # get processing status
+            pass
 
         elif args.serv_parser_name == "daemon":
             print "*******************************************************************************"
@@ -152,26 +158,33 @@ if __name__ == '__main__':
     serv_subparsers = server_parser.add_subparsers(help="--", dest='serv_parser_name')
 
     #-------------------------------------------------
-    # Import new jobs into the data base (create if necessary)
-    import_parser = serv_subparsers.add_parser('importJobs',
+    # Import new pairs into the data base (create if necessary)
+    import_parser = serv_subparsers.add_parser('importPairs',
                                                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                               help='Import new jobs into the data base',
-                                               description='Import new jobs into the data base')
+                                               help='Import new pairs into the data base',
+                                               description='Import new pairs into the data base')
     import_parser.add_argument("db", help="Path to the TrackM database to use / create")
-    import_parser.add_argument("jobs", help="File containing jobs to import")
+    import_parser.add_argument("pairs", help="File containing pairs to import")
     import_parser.add_argument("paths", help="File linking contig IDs to paths")
 
     #-------------------------------------------------
-    # Process selected outstanding jobs
-    process_parser = serv_subparsers.add_parser('process',
-                                                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                                help='Process selected outstanding jobs',
-                                                description='Process selected outstanding jobs')
-    process_parser.add_argument("db", help="Path to the TrackM database to use")
-    process_parser.add_argument("queue", help="Information about the queue(s) to lodge jobs to")
-    process_parser.add_argument("-p", "--port", type=int, default=None, help="Port to listen on")
-    process_parser.add_argument("-n", "--numWorkers", type=int, default=1, help="Process only particular job batches")
-    process_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular job batches [-1 for all batches]")
+    # Process selected outstanding pairs: (hits, annotate, etc. or get progressof pairs)
+    hit_parser = serv_subparsers.add_parser('makeHits',
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                            help='Process selected outstanding pairs',
+                                            description='Process selected outstanding pairs')
+    hit_parser.add_argument("db", help="Path to the TrackM database to use")
+    hit_parser.add_argument("queue", help="Information about the queue(s) to lodge pairs to")
+    hit_parser.add_argument("portRange", help="Ports to listen for workers on <FROM:TO> (NOTE: decides threads as numPorts == numWorkers)")
+    hit_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular pair batches [-1 for all batches]")
+    hit_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port used for getting progress etc")
+
+    progress_parser = serv_subparsers.add_parser('progress',
+                                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                                 help='View the progress of currently running pairs',
+                                                 description='View the progress of currently running pairs')
+    progress_parser.add_argument("db", help="Path to the TrackM database to use")
+    progress_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port the running server will be listening on")
 
     #-------------------------------------------------
     # Run as a daemon to serve an instance of TrackM view etc...
