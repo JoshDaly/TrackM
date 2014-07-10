@@ -165,7 +165,7 @@ class Worker(object):
                 try:
                     self.results[self.workID] += [hit[NP._START_1],
                                                   hit[NP._END_1],
-                                                  hit[NP._START_2].
+                                                  hit[NP._START_2],
                                                   hit[NP._END_2],
                                                   hit[NP._LEN_1],
                                                   hit[NP._LEN_2],
@@ -173,7 +173,7 @@ class Worker(object):
                 except KeyError:
                     self.results[self.workID] = [hit[NP._START_1],
                                                   hit[NP._END_1],
-                                                  hit[NP._START_2].
+                                                  hit[NP._START_2],
                                                   hit[NP._END_2],
                                                   hit[NP._LEN_1],
                                                   hit[NP._LEN_2],
