@@ -82,7 +82,12 @@ def doWork(args):
             finally:
                 if bs is None:
                     bs = []
-            S.makeHits(args.queue, args.commsPort, args.portRange, batches=bs)
+            S.makeHits(args.queueURL,
+                       args.commsPort,
+                       args.portRange,
+                       args.scriptsDir,
+                       args.workingDir,
+                       batches=bs)
 
         elif args.serv_parser_name == "progress":
             # get processing status
@@ -102,11 +107,10 @@ def doWork(args):
         print "*******************************************************************************"
         print " [[TrackM %s]] Running as comparison worker..." % (__version__)
         print "*******************************************************************************"
-        W = Worker(args.gPath1,
+        W = Worker(args.workID,
+                   args.gPath1,
                    args.gPath2,
-                   args.workID,
-                   args.url,
-                   args.port)
+                   args.url)
         W.compareGenomes()
 
     elif(args.subparser_name == 'view'):
@@ -174,8 +178,10 @@ if __name__ == '__main__':
                                             help='Process selected outstanding pairs',
                                             description='Process selected outstanding pairs')
     hit_parser.add_argument("db", help="Path to the TrackM database to use")
-    hit_parser.add_argument("queue", help="Information about the queue(s) to lodge pairs to")
+    hit_parser.add_argument("queueURL", help="Information about the queue(s) to lodge pairs to")
     hit_parser.add_argument("portRange", help="Ports to listen for workers on <FROM:TO> (NOTE: decides threads as numPorts == numWorkers)")
+    hit_parser.add_argument("scriptsDir", help="Path to location for storing SGE scripts")
+    hit_parser.add_argument("-w", "--workingDir", help="Path to location for storing tmp files", default="/tmp")
     hit_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular pair batches [-1 for all batches]")
     hit_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port used for getting progress etc")
 
@@ -202,11 +208,10 @@ if __name__ == '__main__':
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                           help='Utilities for creation of pairwise genome comparisons',
                                           description='Utilities for creation of pairwise genome comparisons')
-    worker_parser.add_argument("gPath1", help="Path to first genome fasta")
-    worker_parser.add_argument("gPath2", help="Path to first second fasta")
     worker_parser.add_argument("workID", type=int, help="Work ID for this task")
-    worker_parser.add_argument("url", type=int, help="URL of the TrackM server")
-    worker_parser.add_argument("port", type=int, help="Port the server is listening on")
+    worker_parser.add_argument("gPath1", help="Full path to first genome fasta")
+    worker_parser.add_argument("gPath2", help="Full path to second genome fasta")
+    worker_parser.add_argument("url", help="URL of the TrackM server to pass results to")
 
     #-------------------------------------------------
     #-------------------------------------------------

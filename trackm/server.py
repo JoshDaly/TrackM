@@ -48,17 +48,15 @@ import zmq
 import json
 import time
 import random
-import zlib
-
-#import logging
-#multiprocessing.log_to_stderr(logging.DEBUG)
-
-from trackm.hit import Hit
 import jsonpickle as jp
+import zlib
+import socket
 
 # local imports
 from trackm.importInterface import ImportInterface
 from trackm.viewInterface import ViewInterface
+from trackm.hit import Hit
+from trackm.sge import SGE
 
 ###############################################################################
 ###############################################################################
@@ -101,27 +99,25 @@ class TestProcessWorker(object):
 
 class ProcessListener(object):
     def __init__(self,
+                 ip,            # ip address of the machine this listener is on
                  port,          # port to communicate on with worker
                  resultQueue,   # put results on this queue to add hits to DB
+                 queueManager,  # SGE queue to place jobs on
+                 scriptsDir,     # where to write SGE scripts to
+                 workingDir,     # where tmp files will be stored
                  (id, gPath1, gPath2, batch, ani)):
         # set up the listener
+        self.ip = ip
         self.port = port
         self.resultQueue = resultQueue
+        self.queueManager = queueManager
+        self.scriptsDir = scriptsDir
+        self.workingDir = workingDir
         self.id = id
-        self.command = self.makeSGE(id, gPath1, gPath2, ani)
-        #print self.command
-        #print "L [%d] : listener made" % self.id
+        self.gPath1 = gPath1
+        self.gPath2 = gPath2
 
-        # create a worker
         self.worker = TestProcessWorker(self.port, self.id, ani)
-
-    def makeSGE(self,
-                id,
-                gPath1,
-                gPath2,
-                ani):
-        """Make a pair request to place on a SGE queue"""
-        return "%d,%s,%s,%0.2f" % (id, gPath1, gPath2,ani)
 
     def start(self):
         """start the listener"""
@@ -132,9 +128,18 @@ class ProcessListener(object):
         #print "L [%d] : ProcessListener on port: %s" % (self.id, self.port)
 
         # set the worker going
+        ret_str, sge_script_fn = self.queueManager.makeSgeScript(self.scriptsDir,
+                                                                 self.workingDir,
+                                                                 self.id,
+                                                                 self.gPath1,
+                                                                 self.gPath2,
+                                                                 "tcp://%s:%d" % (self.ip, self.port)
+                                                                 )
+        self.queueManager.lodgeJob(ret_str, sge_script_fn)
+
         multiprocessing.Process(target=self.worker.start).start()
 
-        # wait for result from worker and decode
+        # wait for result from worker and decode (blocking)
         result = jp.decode(socket.recv().decode("zlib"))
         result[1] = float(result[1])/1000.
 
@@ -143,7 +148,6 @@ class ProcessListener(object):
 
         # tell the worker to exit
         socket.send("DIE")
-
 
 ###############################################################################
 ###############################################################################
@@ -159,6 +163,13 @@ class Server(object):
         self.dbFileName = dbFileName
         self.lock = multiprocessing.Lock()
         self.highestHitId = -1
+        self.queueManager = None
+        self.ip = self.getIpAddress()
+
+    def getIpAddress(self):
+       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+       s.connect(("gmail.com",80))
+       return s.getsockname()[0]
 
     def importNewPairs(self,
                       pairs,     # csv containing information about new pairs to process
@@ -179,13 +190,23 @@ class Server(object):
             II.importPairs(pairs_fh)
 
     def makeHits(self,
-                 queue,          # the queue we'll be sending work to
+                 queueURL,       # the queue we'll be sending work to
                  commsPort,      # port we'll be asked for progress etc on
                  portRange,      # the total number of concurrent pairs we can handle
+                 scriptsDir,     # where to write SGE scripts to
+                 workingDir,     # where tmp files will be stored
                  batches=[]      # the order to do pairs in
                  ):
         """process any specified outstanding pairs"""
         print "Processing outstanding pairs"
+
+        # set tmp dirs
+        self.scriptsDir = scriptsDir
+        self.workingDir = workingDir
+
+        # get hold of the server queue
+        self.queueManager = SGE(queueURL)
+
         VI = ViewInterface(self.dbFileName)
         contig_headers = {}
         if batches != []:
@@ -224,7 +245,13 @@ class Server(object):
             port = port_range[pair%num_threads]
 
             # create a Listener and start it on it's own thread
-            L = ProcessListener(port, result_queue, pairs[pair])
+            L = ProcessListener(self.ip,
+                                port,
+                                result_queue,
+                                self.queueManager,
+                                self.scriptsDir,
+                                self.workingDir,
+                                pairs[pair])
             all_procs.append(multiprocessing.Process(target=L.start).start())
 
             # kill some time while we're waiting for some of the threads to clear
@@ -261,7 +288,6 @@ class Server(object):
     def runAsDaemon(self):
         """Run in the background and serve requests for TrackM view etc"""
         pass
-
 
 ###############################################################################
 ###############################################################################
