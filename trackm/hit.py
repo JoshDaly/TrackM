@@ -52,7 +52,7 @@ class Hit(object):
                  contig1=None,
                  start1=None,
                  len1=None,
-                 strand1=None,
+                 strand1=None,      # == 0 forward, == 1 reverse
                  seq1=None,
                  contig2=None,
                  start2=None,

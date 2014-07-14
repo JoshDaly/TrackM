@@ -45,8 +45,7 @@ __status__ = "Dev"
 
 # system imports
 from sys import exc_info
-import os
-import shutil
+import zlib
 
 # local imports
 from trackm.hit import Hit
@@ -86,7 +85,7 @@ class NucMerParser:
             if not self.prepped:
                 # we still need to strip out the header
                     for l in fp: # search for the first record
-                        
+
                         if l[0] == '=': # next line is good
                             self.prepped = True
                             break
@@ -102,50 +101,53 @@ class NucMerParser:
 
 class Worker(object):
     def __init__(self,
+                 workID,            # workId for this task
                  gPath1,            # absolute path to the first genome
                  gPath2,            # absolute path to the second genome
-                 workID,            # workId for this task
+                 ani,
                  serverURL,         # URL of the commanding TrackM server
-                 serverPort         # port of the commanding TrackM server
                  ):
         self.gPath1 = gPath1
         self.gPath2 = gPath2
         self.workID = workID
         self.serverURL = serverURL
-        self.serverPort = serverPort
 
         # this dictionary will store all the results of the analysis
         # essentially it will be a list of Hit instances
-        self.results = {}
+        self.results = [self.workID, int(ani*1000.)]
 
-    def compareGenomes(self):
+    def runCommand(self, cmd):
+        """Run a command and take care of stdout
+
+        expects 'cmd' to be a string like "foo -b ar"
+
+        returns (stdout, stderr)
+        """
+        p = Popen(cmd.split(' '), stdout=PIPE)
+        return p.communicate()
+
+    def compareGenomes(self,
+                       minLength=500,       # minimum length to be called a hit
+                       minIdentity=99       # minimum identity to be called a hit
+                       ):
         """Do the work of pairwise comparison of genomes"""
         try:
-            # this is the jumping off point for the comparison pipeline
-            # already established in other TrackM scripts. Code inserted here should
-            # resemble a pipeline that calls other functions defined in this class
-            
-            # make the tmp directory using workID
-            os.mkdir("/tmp/trackm/%s" % self.workID)
-            
-            # move into tmp space 
-            os.chdir("/tmp/trackm/%s" % self.workID)
-            
             # run pairwise nucmer instance
-            os.system("nucmer %s %s --mum --coords -p %s" % (self.gPath1,self.gPath2,self.workID))
-            
-            # parse nucmer .coords file
-            self.getHitData()
-            
-            # Nuke tmp output directory
-            #shutil.rmtree("/tmp/trackm/%s" % self.workID)
-            
-            # print out results
-            for hit in self.results:
-                print hit
+            # we expect this to be run from within a directory (handled by trackm.sge)
+            # so there's no need to worry about file names
+            output = self.runCommand("nucmer %s %s --mum --coords" % (self.gPath1, self.gPath2))
+            self.results.append(output)
 
-            # once all the comparisons are done invoke phoneHome to send results back to the server
-            self.phoneHome()
+            # check to see that the 'out.coords' file exists and is non-empty
+            ran_OK = True
+
+            if ran_OK:
+                # parse nucmer .coords file
+                self.getHitData(minLength, identity)
+            else:
+                self.results.append("ERROR")
+                self.results.append(output)
+
         except Exception:
             # catch all exception, if anything goes wrong in the
             # comparison stage and we fail to catch it then we
@@ -153,39 +155,72 @@ class Worker(object):
             # controlling server, that way it will know that the
             # job was aborted.
             print exc_info()[0]
-            self.phoneHome(exception=exc_info()[0])
-            
-    def getHitData(self):
-        # read in nucmer coords file
+            self.results.append("ERROR")
+            self.results.append(exc_info()[0])
+
+        # once all the comparisons are done (or have failed....)
+        # invoke phoneHome to send results back to the calling server
+        self.phoneHome()
+
+
+    def getHitData(self, minLength, identity):
+        """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
-        with open('/tmp/trackm/%s' % self.workID, 'r') as fh:
+        with open('out.coords' % self.workID, 'r') as fh:
             for hit in NP.readNuc(fh):
-                # apply filter >500bp and >99% 
-                #if hit[NP._IDENTITY] > 99 and hit[NP._LEN_1] > 500 and hit[NP._LEN_2] > 500:
-                try:
-                    self.results[self.workID] += [hit[NP._START_1],
-                                                  hit[NP._END_1],
-                                                  hit[NP._START_2],
-                                                  hit[NP._END_2],
-                                                  hit[NP._LEN_1],
-                                                  hit[NP._LEN_2],
-                                                  hit[NP._IDENTITY]]
-                except KeyError:
-                    self.results[self.workID] = [hit[NP._START_1],
-                                                  hit[NP._END_1],
-                                                  hit[NP._START_2],
-                                                  hit[NP._END_2],
-                                                  hit[NP._LEN_1],
-                                                  hit[NP._LEN_2],
-                                                  hit[NP._IDENTITY]]
+                # apply filter >500bp and >99%
+                if hit[NP._IDENTITY] >= minIdentity and hit[NP._LEN_1] >= minLength and hit[NP._LEN_2] > minLength:
+                    # work out strandedness
+                    if hit[NP._END_1] > hit[NP._START_1]:
+                        # forward strand
+                        strand1 = 0
+                        start1 = hit[NP._START_1]
+                    else:
+                        strand1 = 1
+                        start1 = hit[NP._END_1]
+
+                    if hit[NP._END_2] > hit[NP._START_2]:
+                        # forward strand
+                        strand = 0
+                        start2 = hit[NP._START_2]
+                    else:
+                        strand = 1
+                        start2 = hit[NP._END_2]
+
+                    # TODO Get the seqs!
+                    seq1 = "FF"
+                    seq2 = "GG"
+
+                    H = Hit(hit[NP._ID_1],
+                            start1,
+                            hit[NP._LEN_1],
+                            strand1,
+                            seq1,
+                            hit[NP._ID_2],
+                            start2,
+                            hit[NP._LEN_2],
+                            strand2,
+                            seq2,
+                            hit[NP._IDENTITY])
+
+                    self.results.append(H)
 
     def phoneHome(self,
-                  exception=None):
-        """Send the results to the TrackM server
+                  exception=None            # if there was some problem then this will not be None
+                  ):
+        # set up the socket
+        context = zmq.Context()
+        #print "W [%d] : Connecting to listener with port %s" % (self.id, self.port)
+        socket = context.socket(zmq.REQ)
+        socket.connect(self.serverURL)
+        #print "W [%d] : Sending result" % self.id
+        socket.send(jp.encode(self.results).encode("zlib"))
+        message = socket.recv()
+        #print "W [%d] : Received reply [ %s ]" % (self.id, message)
+        if message == "DIE":
+            #print "W [%d] : Ordered to die! Exiting now..." % self.id
+            return
 
-        If exception is None then we assume that it was a success!
-        """
-        pass
 
 ###############################################################################
 ###############################################################################

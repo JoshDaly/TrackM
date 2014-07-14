@@ -110,8 +110,9 @@ def doWork(args):
         W = Worker(args.workID,
                    args.gPath1,
                    args.gPath2,
+                   args.ani,
                    args.url)
-        W.compareGenomes()
+        W.compareGenomes(args.minLength, args.minIdentity)
 
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
@@ -211,6 +212,9 @@ if __name__ == '__main__':
     worker_parser.add_argument("workID", type=int, help="Work ID for this task")
     worker_parser.add_argument("gPath1", help="Full path to first genome fasta")
     worker_parser.add_argument("gPath2", help="Full path to second genome fasta")
+    worker_parser.add_argument("ani", type=float, help="Higest ani of the two genomes")
+    worker_parser.add_argument("-m", "--minLength", type=int, default=300, help="Minimum length of hits to accept")
+    worker_parser.add_argument("-i", "--identity", type=float, default=97.0, help="Minimum identity of hits to accept")
     worker_parser.add_argument("url", help="URL of the TrackM server to pass results to")
 
     #-------------------------------------------------

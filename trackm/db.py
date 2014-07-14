@@ -44,6 +44,30 @@ __TRACKM_DB_VERSION__ = "1.0.0"
 
 # local imports
 from dancingPeasant.baseFile import BaseFile
+from dancingPeasant.interface import Interface
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class DbLogger(Interface):
+    """Wrapper to access the db logging functionality of BaseFile"""
+    def __init__(self,
+                 dbFileName,        # file name to connect to
+                 verbosity=-1       # turn off all DP chatter
+                 ):
+        Interface.__init__(self, dbFileName, verbosity)
+        self.db = TrackMDB(verbosity=verbosity)
+
+    def logMessage(self, message):
+        self.db.logMessage(message)
+
+    def logWarning(self, warning):
+        self.db.logWarning(warning)
+
+    def logError(self, error):
+        self.db.logError(error)
 
 ###############################################################################
 ###############################################################################
