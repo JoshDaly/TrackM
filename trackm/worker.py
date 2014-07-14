@@ -98,6 +98,28 @@ class NucMerParser:
                        [float(i) for i in fields[3].split()] +
                        fields[4].split())
             break # done!
+        
+class ContigParser:
+    """Main class for reading in and parsing contigs"""
+    def __init__(self): pass
+
+    def readFasta(self, fp): # this is a generator function
+        header = None
+        seq = None
+        while True:
+            for l in fp:
+                if l[0] == '>': # fasta header line
+                    if header is not None:
+                        # we have reached a new sequence
+                        yield header, "".join(seq)
+                    header = l.rstrip()[1:].partition(" ")[0] # save the header we just saw
+                    seq = []
+                else:
+                    seq.append(l.rstrip())
+            # anything left in the barrel?
+            if header is not None:
+                yield header, "".join(seq)
+            break
 
 class Worker(object):
     def __init__(self,
@@ -160,7 +182,7 @@ class Worker(object):
 
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server
-        self.phoneHome()
+        # self.phoneHome()
 
 
     def getHitData(self, minLength, identity):
@@ -191,12 +213,16 @@ class Worker(object):
                     seq1 = "FF"
                     seq2 = "GG"
 
-                    H = Hit(hit[NP._ID_1],
+                    # get genome ids
+                    genome_id_1 = self.gPath1.split("/")[-2]
+                    genome_id_2 = self.gPath2.split("/")[-2]
+
+                    H = Hit(hit[NP._ID_1]+"_"+,
                             start1,
                             hit[NP._LEN_1],
                             strand1,
                             seq1,
-                            hit[NP._ID_2],
+                            hit[NP._ID_2]+"_"+,
                             start2,
                             hit[NP._LEN_2],
                             strand2,
