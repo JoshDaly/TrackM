@@ -141,6 +141,10 @@ class genome_contigs(object):
                 contig_name = contig[0] 
                 contig_seq  = contig[1]
                 self.genome_2_contigs[contig_name] =  contig_seq
+                
+    def test(self):
+        for key in self.genome_1_contigs.keys():
+            print key,self.genome_1_contigs[key]
             
     def returnContig(self,contig_name,which_genome,start,length):
         start = start - 1 
@@ -184,6 +188,7 @@ class Worker(object):
         # Capture genome2's contigs in dictionary
         with open(self.gPath2,'r') as fh:
             GC.addContig("genome2", CP.readFasta(fh))
+        GC.test()
         
     def runCommand(self, cmd):
         """Run a command and take care of stdout
