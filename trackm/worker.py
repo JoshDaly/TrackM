@@ -233,7 +233,7 @@ class Worker(object):
         """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
         GC = genome_contigs()
-        with open('out.coords' % self.workID, 'r') as fh:
+        with open('/tmp/job_%s/out.coords' % self.workID, 'r') as fh:
             for hit in NP.readNuc(fh):
                 # apply filter >500bp and >99%
                 if hit[NP._IDENTITY] >= minIdentity and hit[NP._LEN_1] >= minLength and hit[NP._LEN_2] > minLength:
