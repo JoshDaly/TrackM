@@ -208,7 +208,7 @@ class Worker(object):
 
             if ran_OK:
                 # parse nucmer .coords file
-                self.getHitData(minLength, identity)
+                self.getHitData(minLength, minIdentity)
             else:
                 self.results.append("ERROR")
                 self.results.append(output)
@@ -229,7 +229,7 @@ class Worker(object):
         #self.phoneHome() ## REMOVE THE # TO RUN #### 
 
 
-    def getHitData(self, minLength, identity):
+    def getHitData(self, minLength, minIdentity):
         """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
         GC = genome_contigs()
