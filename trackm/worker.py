@@ -149,6 +149,8 @@ class genome_contigs(object):
     def returnContig(self,contig_name,which_genome,start,length):
         start = int(start - 1) 
         stop = int((start - 1) + length)
+        print "###",which_genome
+        print "###",contig_name
         if which_genome == "genome1":
             for contig in self.genome_1_contigs.keys():
                 if contig_name == contig:
