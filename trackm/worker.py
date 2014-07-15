@@ -149,15 +149,15 @@ class genome_contigs(object):
     def returnContig(self,contig_name,which_genome,start,length):
         start = int(start - 1) 
         stop = int((start - 1) + length)
-        print "###",which_genome
-        print "###",contig_name
         if which_genome == "genome1":
             for contig in self.genome_1_contigs.keys():
+                print "###1",contig
                 if contig_name == contig:
                     #return "hello",self.genome_1_contigs[contig_name][start:stop]
                     return "hello",self.genome_1_contigs[contig_name]
         if which_genome == "genome2":
             for contig in self.genome_2_contigs.keys():
+                print "###2",contig
                 if contig_name == contig:
                     #return "hello",self.genome_2_contigs[contig_name][start:stop]
                     return "hello",self.genome_2_contigs[contig_name]
@@ -192,7 +192,6 @@ class Worker(object):
         # Capture genome2's contigs in dictionary
         with open(self.gPath2,'r') as fh:
             GC.addContig("genome2", CP.readFasta(fh))
-        GC.test()
         
     def runCommand(self, cmd):
         """Run a command and take care of stdout
@@ -269,7 +268,6 @@ class Worker(object):
 
                     # Get the seqs!
                     seq1 = GC.returnContig(hit[NP._ID_1], "genome1", start1, hit[NP._LEN_1])
-                    print "hello",seq1
                     seq2 = GC.returnContig(hit[NP._ID_2], "genome2", start2, hit[NP._LEN_2])
                     
                     
