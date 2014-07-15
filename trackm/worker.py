@@ -137,8 +137,8 @@ class genome_contigs(object):
         if which_genome == "genome2":
             contigs = generator
             for contig in contigs:
-                contig_name = contig_gen[0] 
-                contig_seq  = contig_gen[1]
+                contig_name = contig[0] 
+                contig_seq  = contig[1]
                 self.genome_2_contigs[contig_name] =  contig_seq
             
     def returnContig(self,contig_name,which_genome,start,length):
