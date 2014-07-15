@@ -144,7 +144,9 @@ class genome_contigs(object):
                 
     def test(self):
         for key in self.genome_1_contigs.keys():
-            print key,self.genome_1_contigs[key]
+            print "##1",key
+        for key in self.genome_2_contigs.keys():
+            print "##2",key
             
     def returnContig(self,contig_name,which_genome,start,length):
         start = int(start - 1) 
