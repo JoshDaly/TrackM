@@ -160,7 +160,7 @@ class genome_contigs(object):
                     #return "hello",self.genome_1_contigs[contig_name][start:stop]
                     print "hello",self.genome_1_contigs[contig_name]
         if which_genome == "genome2":
-            print self.genome_2_contigs.keys()
+            print self.genome_2_contigs
             for contig in self.genome_2_contigs.keys():
                 print "###2",contig
                 if contig_name == contig:
@@ -183,21 +183,11 @@ class Worker(object):
         self.gid2   = gid2
         self.workID = workID
         self.serverURL = serverURL
-        GC = genome_contigs()
-        CP = ContigParser() 
         
         # this dictionary will store all the results of the analysis
         # essentially it will be a list of Hit instances
         self.results = [self.workID, int(ani*1000.)]
-        
-        # Capture genome1's contigs in dictionary
-        with open(self.gPath1,'r') as fh:
-            GC.addContig("genome1", CP.readFasta(fh))
-            
-        # Capture genome2's contigs in dictionary
-        with open(self.gPath2,'r') as fh:
-            GC.addContig("genome2", CP.readFasta(fh))
-        #GC.test()
+    
         
     def runCommand(self, cmd):
         """Run a command and take care of stdout
@@ -251,6 +241,17 @@ class Worker(object):
         """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
         GC = genome_contigs()
+        CP = ContigParser() 
+        
+        # Capture genome1's contigs in dictionary
+        with open(self.gPath1,'r') as fh:
+            GC.addContig("genome1", CP.readFasta(fh))
+            
+        # Capture genome2's contigs in dictionary
+        with open(self.gPath2,'r') as fh:
+            GC.addContig("genome2", CP.readFasta(fh))
+        #GC.test()
+        
         with open('/tmp/job_%s/out.coords' % self.workID, 'r') as fh:
             for hit in NP.readNuc(fh):
                 # apply filter >500bp and >99%
