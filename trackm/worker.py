@@ -276,7 +276,7 @@ class Worker(object):
 
                     self.results.append(H)
         for hit in self.results:
-            print "aasda",hit
+            print hit
 
     def phoneHome(self,
                   exception=None            # if there was some problem then this will not be None
