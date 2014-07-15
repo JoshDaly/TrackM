@@ -147,16 +147,18 @@ class genome_contigs(object):
             print key,self.genome_1_contigs[key]
             
     def returnContig(self,contig_name,which_genome,start,length):
-        start = start - 1 
-        stop = (start - 1) + length
+        start = int(start - 1) 
+        stop = int((start - 1) + length)
         if which_genome == "genome1":
             for contig in self.genome_1_contigs.keys():
                 if contig_name == contig:
-                    return "hello",self.genome_1_contigs[contig_name][start:stop]
+                    #return "hello",self.genome_1_contigs[contig_name][start:stop]
+                    return "hello",self.genome_1_contigs[contig_name]
         if which_genome == "genome2":
             for contig in self.genome_2_contigs.keys():
                 if contig_name == contig:
-                    return "hello",self.genome_2_contigs[contig_name][start:stop]
+                    #return "hello",self.genome_2_contigs[contig_name][start:stop]
+                    return "hello",self.genome_2_contigs[contig_name]
 
 class Worker(object):
     def __init__(self,
