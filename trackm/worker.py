@@ -260,8 +260,10 @@ class Worker(object):
 
                     # Get the seqs!
                     seq1 = GC.returnContig(hit[NP._ID_1], 'genome1', start1, hit[NP._LEN_1])
+                    print seq1
                     seq2 = GC.returnContig(hit[NP._ID_2], 'genome2', start2, hit[NP._LEN_2])
-
+                    print seq2
+                    
                     H = Hit(hit[NP._ID_1]+"_"+self.gid1,
                             start1,
                             hit[NP._LEN_1],
