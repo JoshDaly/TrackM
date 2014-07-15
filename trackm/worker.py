@@ -160,6 +160,7 @@ class genome_contigs(object):
                     #return "hello",self.genome_1_contigs[contig_name][start:stop]
                     print "hello",self.genome_1_contigs[contig_name]
         if which_genome == "genome2":
+            print self.genome_2_contigs.keys()
             for contig in self.genome_2_contigs.keys():
                 print "###2",contig
                 if contig_name == contig:
