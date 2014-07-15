@@ -151,6 +151,7 @@ class genome_contigs(object):
     def returnContig(self,contig_name,which_genome,start,length):
         start = int(start - 1) 
         stop = int((start - 1) + length)
+        print "I got here"
         if which_genome == "genome1":
             for contig in self.genome_1_contigs.keys():
                 print "###1",contig
@@ -272,7 +273,6 @@ class Worker(object):
                     # Get the seqs!
                     seq1 = GC.returnContig(hit[NP._ID_1], "genome1", start1, hit[NP._LEN_1])
                     seq2 = GC.returnContig(hit[NP._ID_2], "genome2", start2, hit[NP._LEN_2])
-                    
                     
                     H = Hit(hit[NP._ID_1]+"_"+self.gid1,
                             start1,
