@@ -218,11 +218,11 @@ class Worker(object):
             # can catch it here and return the exception to the
             # controlling server, that way it will know that the
             # job was aborted.
-            print "hello"
             print exc_info()[0]
             self.results.append("ERROR")
             self.results.append(exc_info()[0])
-
+            raise
+        
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server
         #self.phoneHome() ## REMOVE THE # TO RUN #### 
