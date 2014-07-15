@@ -194,7 +194,7 @@ class Worker(object):
         # Capture genome2's contigs in dictionary
         with open(self.gPath2,'r') as fh:
             GC.addContig("genome2", CP.readFasta(fh))
-        GC.test()
+        #GC.test()
         
     def runCommand(self, cmd):
         """Run a command and take care of stdout
