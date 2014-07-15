@@ -109,7 +109,9 @@ def doWork(args):
         print "*******************************************************************************"
         W = Worker(args.workID,
                    args.gPath1,
+                   args.gid1,
                    args.gPath2,
+                   args.gid2,
                    args.ani,
                    args.url)
         W.compareGenomes(args.minLength, args.minIdentity)
@@ -211,7 +213,9 @@ if __name__ == '__main__':
                                           description='Utilities for creation of pairwise genome comparisons')
     worker_parser.add_argument("workID", type=int, help="Work ID for this task")
     worker_parser.add_argument("gPath1", help="Full path to first genome fasta")
+    worker_parser.add_argument("gid1", help="Genome tree id for genome 1")
     worker_parser.add_argument("gPath2", help="Full path to second genome fasta")
+    worker_parser.add_argument("gid2", help="Genome tree id for genome 2")
     worker_parser.add_argument("ani", type=float, help="Higest ani of the two genomes")
     worker_parser.add_argument("-m", "--minLength", type=int, default=300, help="Minimum length of hits to accept")
     worker_parser.add_argument("-i", "--identity", type=float, default=97.0, help="Minimum identity of hits to accept")

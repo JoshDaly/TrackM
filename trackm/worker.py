@@ -56,7 +56,7 @@ from trackm.exceptions import *
 ###############################################################################
 ###############################################################################
 
-class NucMerParser:
+class NucMerParser(object):
     """Wrapper class for parsing nucmer output"""
     # constants to make the code more readable
     _START_1  = 0
@@ -99,7 +99,7 @@ class NucMerParser:
                        fields[4].split())
             break # done!
         
-class ContigParser:
+class ContigParser(object):
     """Main class for reading in and parsing contigs"""
     def __init__(self): pass
 
@@ -121,23 +121,65 @@ class ContigParser:
                 yield header, "".join(seq)
             break
 
+class genome_contigs(object):
+    def __init__(self):
+        self.genome_1_contigs = {} # dictionary to store first genome data
+        self.genome_2_contigs = {} # dictionary to store second genome data
+
+    def addContig(self,which_genome,generator):
+        if which_genome == "genome1":
+            contigs = generator
+            for contig in contigs:
+                contig_name = contig[0] 
+                contig_seq  = contig[1]
+                self.genome_1_contigs[contig_name] = contig_seq 
+                
+        if which_genome == "genome2":
+            contigs = generator
+            for contig in contigs:
+                contig_name = contig_gen[0] 
+                contig_seq  = contig_gen[1]
+                self.genome_2_contigs[contig_name] =  contig_seq
+            
+    def returnContig(self,contig_name,which_genome,start,length):
+        start = start - 1 
+        stop = (start - 1) + length
+        if which_genome == "genome1":
+            return self.genome_1_contigs[contig_name][start:stop]
+        if which_genome == "genome2":
+            return self.genome_2_contigs[contig_name][start:stop]
+
 class Worker(object):
     def __init__(self,
                  workID,            # workId for this task
+                 gid1,              # genome tree id for first genome
                  gPath1,            # absolute path to the first genome
+                 gid2,              # genome tree id for second genome
                  gPath2,            # absolute path to the second genome
                  ani,
                  serverURL,         # URL of the commanding TrackM server
                  ):
         self.gPath1 = gPath1
         self.gPath2 = gPath2
+        self.gid1   = gid1 
+        self.gid2   = gid2
         self.workID = workID
         self.serverURL = serverURL
-
+        GC = genome_contigs()
+        CP = ContigParser() 
+        
         # this dictionary will store all the results of the analysis
         # essentially it will be a list of Hit instances
         self.results = [self.workID, int(ani*1000.)]
-
+        
+        # Capture genome1's contigs in dictionary
+        with open(self.gPath1,'r') as fh:
+            GC.addContig("genome1", CP.readFasta(fh))
+            
+        # Capture genome2's contigs in dictionary
+        with open(self.gPath2,'r') as fh:
+            GC.addContig("genome2", CP.readFasta(fh))
+        
     def runCommand(self, cmd):
         """Run a command and take care of stdout
 
@@ -182,12 +224,13 @@ class Worker(object):
 
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server
-        # self.phoneHome()
+        #self.phoneHome() ## REMOVE THE # TO RUN #### 
 
 
     def getHitData(self, minLength, identity):
         """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
+        GC = genome_contigs()
         with open('out.coords' % self.workID, 'r') as fh:
             for hit in NP.readNuc(fh):
                 # apply filter >500bp and >99%
@@ -203,26 +246,22 @@ class Worker(object):
 
                     if hit[NP._END_2] > hit[NP._START_2]:
                         # forward strand
-                        strand = 0
+                        strand2 = 0
                         start2 = hit[NP._START_2]
                     else:
-                        strand = 1
+                        strand2 = 1
                         start2 = hit[NP._END_2]
 
-                    # TODO Get the seqs!
-                    seq1 = "FF"
-                    seq2 = "GG"
+                    # Get the seqs!
+                    seq1 = GC.returnContig(hit[NP._ID_1], 'genome1', start1, hit[NP._LEN_1])
+                    seq2 = GC.returnContig(hit[NP._ID_2], 'genome2', start2, hit[NP._LEN_2])
 
-                    # get genome ids
-                    genome_id_1 = self.gPath1.split("/")[-2]
-                    genome_id_2 = self.gPath2.split("/")[-2]
-
-                    H = Hit(hit[NP._ID_1]+"_"+,
+                    H = Hit(hit[NP._ID_1]+"_"+self.gid1,
                             start1,
                             hit[NP._LEN_1],
                             strand1,
                             seq1,
-                            hit[NP._ID_2]+"_"+,
+                            hit[NP._ID_2]+"_"+self.gid2,
                             start2,
                             hit[NP._LEN_2],
                             strand2,
