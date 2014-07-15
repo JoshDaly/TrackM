@@ -152,10 +152,10 @@ class genome_contigs(object):
 class Worker(object):
     def __init__(self,
                  workID,            # workId for this task
-                 gid1,              # genome tree id for first genome
                  gPath1,            # absolute path to the first genome
-                 gid2,              # genome tree id for second genome
+                 gid1,              # genome tree id for first genome
                  gPath2,            # absolute path to the second genome
+                 gid2,              # genome tree id for second genome
                  ani,
                  serverURL,         # URL of the commanding TrackM server
                  ):
@@ -269,6 +269,8 @@ class Worker(object):
                             hit[NP._IDENTITY])
 
                     self.results.append(H)
+        for hit in self.results:
+            print hit
 
     def phoneHome(self,
                   exception=None            # if there was some problem then this will not be None
