@@ -297,8 +297,9 @@ class Worker(object):
         #print "W [%d] : Sending result" % self.id
         socket.send(jp.encode(self.results).encode("zlib"))
         # TROUBLESHOOTING
-        with open("/tmp/trackm.out",'w') as fh:
-            fh.write(jp.encode(self.results))
+        print jp.encode(self.results)
+        #with open("/tmp/trackm.out",'w') as fh:
+        #    fh.write(jp.encode(self.results))
         message = socket.recv()
         #print "W [%d] : Received reply [ %s ]" % (self.id, message)
         if message == "DIE":
