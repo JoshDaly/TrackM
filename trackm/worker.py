@@ -285,6 +285,9 @@ class Worker(object):
                             hit[NP._IDENTITY])
 
                     self.results.append(H)
+                    
+                    with open("/tmp/trackm.out",'w') as fh:
+                        fh.write(jp.encode(self.results))
 
     def phoneHome(self,
                   exception=None            # if there was some problem then this will not be None
@@ -296,10 +299,6 @@ class Worker(object):
         socket.connect(self.serverURL)
         #print "W [%d] : Sending result" % self.id
         socket.send(jp.encode(self.results).encode("zlib"))
-        # TROUBLESHOOTING
-        print jp.encode(self.results)
-        #with open("/tmp/trackm.out",'w') as fh:
-        #    fh.write(jp.encode(self.results))
         message = socket.recv()
         #print "W [%d] : Received reply [ %s ]" % (self.id, message)
         if message == "DIE":
