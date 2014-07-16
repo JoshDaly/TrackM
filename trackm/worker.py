@@ -48,6 +48,7 @@ from sys import exc_info
 import zlib
 import zmq
 from subprocess import Popen, PIPE
+import jsonpickle as jp
 
 # local imports
 from trackm.hit import Hit
