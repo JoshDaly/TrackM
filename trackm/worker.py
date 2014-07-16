@@ -229,7 +229,7 @@ class Worker(object):
         
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server
-        self.phoneHome() 
+        # self.phoneHome() 
 
 
     def getHitData(self, minLength, minIdentity):
