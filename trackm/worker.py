@@ -46,6 +46,7 @@ __status__ = "Dev"
 # system imports
 from sys import exc_info
 import zlib
+import zmq
 from subprocess import Popen, PIPE
 
 # local imports
