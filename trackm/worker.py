@@ -228,7 +228,7 @@ class Worker(object):
         
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server
-        #self.phoneHome() ## REMOVE THE # TO RUN #### 
+        self.phoneHome() 
 
 
     def getHitData(self, minLength, minIdentity):
@@ -284,8 +284,6 @@ class Worker(object):
                             hit[NP._IDENTITY])
 
                     self.results.append(H)
-        for hit in self.results:
-            print hit
 
     def phoneHome(self,
                   exception=None            # if there was some problem then this will not be None
