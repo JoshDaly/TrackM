@@ -49,6 +49,7 @@ import zlib
 import zmq
 from subprocess import Popen, PIPE
 import jsonpickle as jp
+from string import maketrans
 
 # local imports
 from trackm.hit import Hit
@@ -101,7 +102,12 @@ class NucMerParser(object):
                        [float(i) for i in fields[3].split()] +
                        fields[4].split())
             break # done!
-        
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
 class ContigParser(object):
     """Main class for reading in and parsing contigs"""
     def __init__(self): pass
@@ -124,67 +130,88 @@ class ContigParser(object):
                 yield header, "".join(seq)
             break
 
-class genome_contigs(object):
-    def __init__(self):
-        self.genome_1_contigs = {} # dictionary to store first genome data
-        self.genome_2_contigs = {} # dictionary to store second genome data
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 
-    def addContig(self,which_genome,generator):
-        if which_genome == "genome1":
-            contigs = generator
-            for contig in contigs:
-                contig_name = contig[0] 
-                contig_seq  = contig[1]
-                self.genome_1_contigs[contig_name] = contig_seq 
-                
-        if which_genome == "genome2":
-            contigs = generator
-            for contig in contigs:
-                contig_name = contig[0] 
-                contig_seq  = contig[1]
-                self.genome_2_contigs[contig_name] =  contig_seq
-                
-    def test(self):
-        for key in self.genome_1_contigs.keys():
-            print "##1",key,self.genome_1_contigs[key]
-        for key in self.genome_2_contigs.keys():
-            print "##2",key,self.genome_2_contigs[key]
-            
-    def returnContig(self,contig_name,which_genome,start,length):
-        start = int(start - 1) 
-        stop = int((start - 1) + length)
-        if which_genome == "genome1":
-            for contig in self.genome_1_contigs.keys():
-                if contig_name == contig:
-                    return self.genome_1_contigs[contig_name][start:stop]
-        if which_genome == "genome2":
-            for contig in self.genome_2_contigs.keys():
-                if contig_name == contig:
-                    return self.genome_2_contigs[contig_name][start:stop]
-                    
+class ContigManager(object):
+    """store genome -> contig data"""
+    def __init__(self):
+        self.contigs = {}
+        # use this for reverse complementing
+        self.compl = maketrans('ACGTNacgtn', 'TGCANtgcan')
+
+    def addContig(self,
+                  prefix,           # this is effectively the gid.
+                  generator):       # a contig parser object
+        """Add a contig to the data store"""
+        for contig_name, contig_seq in generator:
+            try:
+                self.contigs[prefix][contig_name] = contig_seq
+            except KeyError:
+                # first time we've seen this prefix
+                self.contigs[prefix] = {}
+                self.contigs[prefix][contig_name] = contig_seq
+
+    def getSequence(self,
+                    contigName,     # the name of a contig stored in self.contigs
+                    prefix,         # this is effectively the gid.
+                    start,          # start position of the sequence to take
+                    end,            # end position of the sequence to take
+                    strand):
+        """Return a substring of a contig
+
+        NOTE: end > start ALWAYS!
+        """
+        if strand == 0:     # take care of strandiness
+            return ("_".join[prefix, contigName], self.contigs[prefix][contigName][start-1:end])
+        else:
+            return ("_".join[prefix, contigName], self.revComp(self.contigs[prefix][contigName][start-1:end]))
+
+    def revComp(self, seq):
+        """Return the reverse complement of a sequence"""
+        # build a dictionary to know what letter to switch to
+        return seq.translate(self.compl)[::-1]
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 
 class Worker(object):
+    """ The format of the results list is:
+
+    [UID, ANI, NUCMER_OUTPUT, <HIT>, <HIT>, ... ]
+
+    where NUCMER_OUTPUT is a tuple and <HIT> is a track.hit.Hit instance
+
+    or
+
+    [UID, ANI, "ERROR", EXCEPTION ]
+
+    if something has gone wrong with running Nucmer or parsing it's output
+    """
     def __init__(self,
                  workID,            # workId for this task
                  gPath1,            # absolute path to the first genome
                  gid1,              # genome tree id for first genome
                  gPath2,            # absolute path to the second genome
                  gid2,              # genome tree id for second genome
-                 ani,
+                 ani,               # the highest ANI between the genomes
                  serverURL,         # URL of the commanding TrackM server
                  ):
-        self.gPath1 = gPath1
-        self.gPath2 = gPath2
-        self.gid1   = gid1 
-        self.gid2   = gid2
         self.workID = workID
+        self.gPath1 = gPath1
+        self.gid1   = gid1
+        self.gPath2 = gPath2
+        self.gid2   = gid2
         self.serverURL = serverURL
-        
-        # this dictionary will store all the results of the analysis
+
+        # this list will store all the results of the analysis
         # essentially it will be a list of Hit instances
         self.results = [self.workID, int(ani*1000.)]
-    
-        
+
     def runCommand(self, cmd):
         """Run a command and take care of stdout
 
@@ -204,6 +231,7 @@ class Worker(object):
             # run pairwise nucmer instance
             # we expect this to be run from within a directory (handled by trackm.sge)
             # so there's no need to worry about file names
+            # change dir to the working dir
             output = self.runCommand("nucmer %s %s --mum --coords" % (self.gPath1, self.gPath2))
             self.results.append(output)
 
@@ -227,32 +255,36 @@ class Worker(object):
             self.results.append("ERROR")
             self.results.append(exc_info()[0])
             raise
-        
-        # once all the comparisons are done (or have failed....)
-        # invoke phoneHome to send results back to the calling server
-        # self.phoneHome() 
 
+        test = True
+        if test:
+            # write to file so we can see the hits
+            with open("/tmp/trackm.out",'w') as fh:
+                fh.write(jp.encode(self.results))
+        else:
+            # once all the comparisons are done (or have failed....)
+            # invoke phoneHome to send results back to the calling server
+            self.phoneHome()
 
     def getHitData(self, minLength, minIdentity):
         """Filter Nucmer hits and add them to the result list"""
         NP = NucMerParser()
-        GC = genome_contigs()
-        CP = ContigParser() 
-        
+        CM = ContigManager()
+        CP = ContigParser()
+
         # Capture genome1's contigs in dictionary
         with open(self.gPath1,'r') as fh:
-            GC.addContig("genome1", CP.readFasta(fh))
-            
+            CM.addContig(self.gid1, CP.readFasta(fh))
+
         # Capture genome2's contigs in dictionary
         with open(self.gPath2,'r') as fh:
-            GC.addContig("genome2", CP.readFasta(fh))
-        #GC.test()
-        
-        with open('/tmp/job_%s/out.coords' % self.workID, 'r') as fh:
+            CM.addContig(self.gid2, CP.readFasta(fh))
+
+        with open(os.path.join("out.coords" , 'r')) as fh:
             for hit in NP.readNuc(fh):
                 # apply filter >500bp and >99%
                 if hit[NP._IDENTITY] >= minIdentity and hit[NP._LEN_1] >= minLength and hit[NP._LEN_2] > minLength:
-                    # work out strandedness
+                    # work out strandedness + ensure that start < end ALWAYS!
                     if hit[NP._END_1] > hit[NP._START_1]:
                         # forward strand
                         strand1 = 0
@@ -270,25 +302,22 @@ class Worker(object):
                         start2 = hit[NP._END_2]
 
                     # Get the seqs!
-                    seq1 = GC.returnContig(hit[NP._ID_1], "genome1", start1, hit[NP._LEN_1])
-                    seq2 = GC.returnContig(hit[NP._ID_2], "genome2", start2, hit[NP._LEN_2])
-                    
-                    H = Hit(hit[NP._ID_1]+"_"+self.gid1,
+                    (cid1, seq1) = CM.getSequence(hit[NP._ID_1], self.gid1, start1, hit[NP._END_1], strand1)
+                    (cid2, seq2) = CM.getSequence(hit[NP._ID_2], self.gid2, start2, hit[NP._END_2], strand2)
+
+                    # make the Hit and put it on the list
+                    H = Hit(cid1,
                             start1,
                             hit[NP._LEN_1],
                             strand1,
                             seq1,
-                            hit[NP._ID_2]+"_"+self.gid2,
+                            cid2,
                             start2,
                             hit[NP._LEN_2],
                             strand2,
                             seq2,
                             hit[NP._IDENTITY])
-
                     self.results.append(H)
-                    
-                    with open("/tmp/trackm.out",'w') as fh:
-                        fh.write(jp.encode(self.results))
 
     def phoneHome(self,
                   exception=None            # if there was some problem then this will not be None

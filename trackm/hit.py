@@ -47,7 +47,19 @@ import string
 ###############################################################################
 
 class Hit(object):
-    """Simple storage class"""
+    """Class for encoding an alignment found between two contigs
+
+    The hit is recorded in terms of its start position, length and strand with
+    to how the contig was written in the file passed to the alignment algorithm.
+
+    strand == 0 implies that the hit is on the contig as written
+    strand == 1 implies it is on the reverse strand
+
+    start and len always refers to the contig as written
+
+    seq is the sequence that hit, if strand == 1 then it is the reverse complement
+    the substring of length len starting at start from the contig as written.
+    """
     def __init__(self,
                  contig1=None,
                  start1=None,

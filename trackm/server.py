@@ -105,7 +105,7 @@ class ProcessListener(object):
                  queueManager,  # SGE queue to place jobs on
                  scriptsDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
-                 (id, gPath1, gPath2, batch, ani)):
+                 (id, gPath1, gPath2, gid1, gid2, batch, ani)):
         # set up the listener
         self.ip = ip
         self.port = port
@@ -116,6 +116,8 @@ class ProcessListener(object):
         self.id = id
         self.gPath1 = gPath1
         self.gPath2 = gPath2
+        self.gid1 = gid1
+        self.gid2 = gid2
         self.ani = ani
 
         self.worker = TestProcessWorker(self.port, self.id, ani)
@@ -134,6 +136,8 @@ class ProcessListener(object):
                                                                  self.id,
                                                                  self.gPath1,
                                                                  self.gPath2,
+                                                                 self.gid1,
+                                                                 self.gid2,
                                                                  self.ani,
                                                                  "tcp://%s:%d" % (self.ip, self.port)
                                                                  )
@@ -154,7 +158,7 @@ class ProcessListener(object):
             return
 
         # check to see that there was no issue running the worker
-        # basically, check to see that the last item in the rsult array is
+        # basically, check to see that the last item in the result array is
         # actually a hit
         if len(result) > 3:
             # there is something on the end of this array

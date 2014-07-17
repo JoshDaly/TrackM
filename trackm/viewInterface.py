@@ -62,7 +62,11 @@ class ViewInterface(Interface):
         self.db = TrackMDB(verbosity=verbosity)
 
     def getOutstandingPairs(self, aniCut=95., batch=None):
-        """Get all the outstanding pairs based on batch and ani cutoff"""
+        """Get all the outstanding pairs based on batch and ani cutoff
+
+        returns a list of tuples of type:
+        (job_id, gPath1, gPath2, gid1, gid2, batch, ani_comp)
+        """
         self.connect()
         # get all the outstanding pairs
         if batch is None:
@@ -78,7 +82,7 @@ class ViewInterface(Interface):
             highest_ani = np.max([pair[3], pair[4]])
             if highest_ani <= aniCut:
                 # pair is OK
-                vetted_pairs.append((pair[0], gids[pair[1]], gids[pair[2]], pair[5], highest_ani))
+                vetted_pairs.append((pair[0], gids[pair[1]], gids[pair[2]], pair[1], pair[2], pair[5], highest_ani))
         return vetted_pairs
 
     def getGids(self):

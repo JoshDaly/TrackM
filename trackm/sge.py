@@ -84,6 +84,8 @@ class SGE(object):
                       jobId,                # the unique id for this job (pid)
                       gPath1,               # full path to the first genome
                       gPath2,               # full path to the second genome
+                      gid1,                 # the unique ID for the first genome
+                      gid2,                 # the unique ID for the second genome
                       ani,                  # highest ani between the two servers
                       url,                  # url of the server to pass results to
                       ):
@@ -104,8 +106,8 @@ class SGE(object):
         ret_str += "mkdir -p %s\n" % working_dir
         ret_str += "cd %s\n" % working_dir
         ret_str += "module load trackm\n"
-        ret_str += "module load nucmer\n"
-        ret_str += "trackm worker %d %s %s %0.3f %s\n" % (jobId, gPath1, gPath2, ani, url)
+        ret_str += "module load mummer\n"
+        ret_str += "trackm worker %d %s %s %s %s %0.3f %s\n" % (jobId, gPath1, gid1, gPath2, gid2, ani, url)
 
         # clean up the filesystem
         ret_str += "cd ..\n"

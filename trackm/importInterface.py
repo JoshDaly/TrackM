@@ -151,7 +151,7 @@ class ImportInterface(Interface):
 
         hits is a list structured like this:
 
-        [pid, ani_comp, <trackm.hit.Hit object>, <trackm.hit.Hit object>, ...]
+        [pid, ani_comp, (nucmer, output), <trackm.hit.Hit object>, <trackm.hit.Hit object>, ...]
         """
         self.connect()
         sqid, hid, cid, oid = self.getHighestIds()
@@ -160,7 +160,7 @@ class ImportInterface(Interface):
         to_db = []
         new_contigs = []
         new_seqs = []
-        for i in range(2, len(hits)):
+        for i in range(3, len(hits)):
             # for each new hit
 
             # work out if we'e seen the contigs before or make a new entry
