@@ -98,86 +98,120 @@ class TestProcessWorker(object):
             #print "W [%d] : Ordered to die! Exiting now..." % self.id
             return
 
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class HitTask(object):
+    """Encapsulate information needed to carry out a comparison between two genomes"""
+    def __init__(self, (id, gPath1, gPath2, gid1, gid2, batch, ani) ):
+        self.id = id            # unique ID for the comparison (pid)
+        self.gPath1 = gPath1    # path to the first genome
+        self.gPath2 = gPath2    # path to the second genome
+        self.gid1 = gid1        # uid for the first genome
+        self.gid2 = gid2        # uid for the second genome
+        self.ani = ani          # highest ani between genome1 and genome2
+
+    def __str__(self):
+        return "\t".join([str(i) for i in [self.id,
+                                           self.gPath1,
+                                           self.gPath2,
+                                           self.gid1,
+                                           self.gid2,
+                                           self.ani]
+                          ]
+                         )
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
 class ProcessListener(object):
     def __init__(self,
-                 ip,            # ip address of the machine this listener is on
-                 port,          # port to communicate on with worker
-                 resultQueue,   # put results on this queue to add hits to DB
-                 queueManager,  # SGE queue to place jobs on
+                 ip,             # ip address of the machine this listener is on
+                 port,           # port to communicate on with worker
+                 taskQueue,      # consume tasks from this queue
+                 resultQueue,    # put results on this queue to add hits to DB
+                 queueManager,   # SGE queue to place jobs on
                  sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
-                 (id, gPath1, gPath2, gid1, gid2, batch, ani)):
+                 ):
         # set up the listener
         self.ip = ip
         self.port = port
+        self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self.queueManager = queueManager
         self.sgeBaseDir = sgeBaseDir
         self.workingDir = workingDir
-        self.id = id
-        self.gPath1 = gPath1
-        self.gPath2 = gPath2
-        self.gid1 = gid1
-        self.gid2 = gid2
-        self.ani = ani
 
     def start(self):
         """start the listener"""
         # set up the socket
-        socket_OK = False
-        context = zmq.Context()
-        socket = context.socket(zmq.REP)
-        while not socket_OK:
-            try:
-                socket.bind("tcp://*:%s" % self.port)
-                socket_OK  = True
-            except zmq.ZMQError:
-                print sys.exc_info()[0]
-                time.sleep(1)
+        while True:
+            # get the next task
+            task = self.taskQueue.get(block=True, timeout=None)
+            if task == None:
+                # poison pill
+                break
 
-        # set the worker going
-        ret_str, sge_script_fn = self.queueManager.makeSgeScript(self.sgeBaseDir,
-                                                                 self.workingDir,
-                                                                 self.id,
-                                                                 self.gPath1,
-                                                                 self.gPath2,
-                                                                 self.gid1,
-                                                                 self.gid2,
-                                                                 self.ani,
-                                                                 "tcp://%s:%d" % (self.ip, self.port)
-                                                                 )
-        self.queueManager.lodgeJob(ret_str, sge_script_fn)
+            # configure zmq to listen for the result
+            socket_OK = False
+            context = zmq.Context()
+            socket = context.socket(zmq.REP)
+            while not socket_OK:
+                try:
+                    socket.bind("tcp://*:%s" % self.port)
+                    socket_OK  = True
+                except zmq.ZMQError:
+                    #print sys.exc_info()[0]
+                    time.sleep(1)
 
-        # TODO: send the deets of this job off to an external management thread which
-        # monitors the queue to make sure the job isn't just dropped. If it is then is can send
-        # a "DIE" signal to this listener
+            # set the worker going
+            ret_str, sge_script_fn = self.queueManager.makeSgeScript(self.sgeBaseDir,
+                                                                     self.workingDir,
+                                                                     task.id,
+                                                                     task.gPath1,
+                                                                     task.gPath2,
+                                                                     task.gid1,
+                                                                     task.gid2,
+                                                                     task.ani,
+                                                                     "tcp://%s:%d" % (self.ip, self.port)
+                                                                     )
+            self.queueManager.lodgeJob(ret_str, sge_script_fn)
 
-        # wait for result from worker and decode (blocking)
-        result = jp.decode(socket.recv().decode("zlib"))
+            # TODO: send the deets of this job off to an external management thread which
+            # monitors the queue to make sure the job isn't just dropped. If it is then is can send
+            # a "DIE" signal to this listener
 
-        # check to see we've not been told to die
-        if result == "DIE":
-            # we abandon the worker and simply exit
-            return
+            # wait for result from worker and decode (blocking)
+            result = jp.decode(socket.recv().decode("zlib"))
 
-        # check to see that there was no issue running the worker
-        # basically, check to see that the last item in the result array is
-        # actually a hit
-        if len(result) > 3:
-            # there is something on the end of this array
-            if result[-2] == "ERROR":
-                # something went wrong. Print it out!
-                # TODO use logging module
-                print self.id, self.gPath1, self.gPath2
-                print result[-1]
+            # check to see we've not been told to die
+            if result == "DIE":
+                # we abandon the worker and simply exit
+                return
 
-        result[1] = float(result[1])/1000.
+            # check to see that there was no issue running the worker
+            # basically, check to see that the last item in the result array is
+            # actually a hit
+            if len(result) > 3:
+                # there is something on the end of this array
+                if result[-2] == "ERROR":
+                    # something went wrong. Print it out!
+                    # TODO use logging module
+                    print self.id, self.gPath1, self.gPath2
+                    print result[-1]
 
-        # place the result on the queue
-        self.resultQueue.put(result)
+            result[1] = float(result[1])/1000.
 
-        # tell the worker to exit
-        socket.send("DIE")
+            # place the result on the result queue
+            self.resultQueue.put(result)
+
+            # tell the worker to exit
+            socket.send("DIE")
 
 ###############################################################################
 ###############################################################################
@@ -191,7 +225,6 @@ class Server(object):
                  ):
         self.port = port
         self.dbFileName = dbFileName
-        self.lock = multiprocessing.Lock()
         self.highestHitId = -1
         self.queueManager = None
         self.ip = self.getIpAddress()
@@ -257,50 +290,47 @@ class Server(object):
         """Set up a worker to process pairs"""
         port_range = [int(i) for i in portRange.split(":")]
         port_range = range(port_range[0], port_range[1]+1)
-        num_threads = int(len(port_range)/2)
+        num_threads = int(len(port_range))
         if batch == None:
             print "Processing %d pairs on %d threads" % (len(pairs), num_threads)
         else:
             print "Processing %d pairs on %d threads (batch: %d)" % (len(pairs), num_threads, batch)
 
-        # get the highest hit id in the db
+        # use these queues to handle threading
+        task_queue = multiprocessing.Queue()
         result_queue = multiprocessing.Queue()
-        # the None is needed!
-        updater_process = multiprocessing.Process(target=self._updateHits, args=(contigHeaders, result_queue)).start()
-        # give the updater time to fire up
-        time.sleep(1)
 
-        # implement a dodgy thread pool
-        all_procs = []
+        # make the list of tasks
         for pair in range(len(pairs)):
-            # get the port for this thread
-            port = port_range[pair%num_threads]
+            task_queue.put( Task(pairs[pair]) )
 
-            # create a Listener and start it on it's own thread
+        # place poison pills and set up the listeners
+        listeners = []
+        for t in range(num_threads):
+            task_queue.put(None)
+            port = port_range[t%num_threads]        # 1 port per process
             L = ProcessListener(self.ip,
                                 port,
+                                task_queue,
                                 result_queue,
                                 self.queueManager,
                                 self.sgeBaseDir,
-                                self.workingDir,
-                                pairs[pair])
-            all_procs.append(multiprocessing.Process(target=L.start).start())
+                                self.workingDir)
 
-            # make sure we don't totally ambush the ssh server
-            time.sleep(1)
+            listeners.append(multiprocessing.Process(target=L.start))
 
-            # kill some time while we're waiting for some of the threads to clear
-            while len(multiprocessing.active_children()) >= (num_threads + 1):
-                time.sleep(1)
+        # start the thread that will handle the placing of results in the DB
+        result_handling_process = multiprocessing.Process(target=self._updateHits, args=(contigHeaders, result_queue)).start()
+        # give the updater time to fire up
+        time.sleep(1)
 
-        # make sure all the processes are done before we go on
-        while len(multiprocessing.active_children()) > 1:
-            time.sleep(1)
+        for l in listeners:
+            l.start()
+            time.sleep(1)       # not allowed to attack the ssh daemon
 
-        # wait for the workers to finish up
-        for proc in all_procs:
-            if proc is not None:
-                proc.join()
+        for l in listeners:
+            if l is not None:
+                l.join()
 
         # kill the updater process
         result_queue.put(None)
