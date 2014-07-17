@@ -51,6 +51,7 @@ import random
 import jsonpickle as jp
 import zlib
 import socket
+import sys
 
 # local imports
 from trackm.importInterface import ImportInterface
@@ -103,7 +104,7 @@ class ProcessListener(object):
                  port,          # port to communicate on with worker
                  resultQueue,   # put results on this queue to add hits to DB
                  queueManager,  # SGE queue to place jobs on
-                 scriptsDir,     # where to write SGE scripts to
+                 sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
                  (id, gPath1, gPath2, gid1, gid2, batch, ani)):
         # set up the listener
@@ -111,7 +112,7 @@ class ProcessListener(object):
         self.port = port
         self.resultQueue = resultQueue
         self.queueManager = queueManager
-        self.scriptsDir = scriptsDir
+        self.sgeBaseDir = sgeBaseDir
         self.workingDir = workingDir
         self.id = id
         self.gPath1 = gPath1
@@ -120,18 +121,22 @@ class ProcessListener(object):
         self.gid2 = gid2
         self.ani = ani
 
-        self.worker = TestProcessWorker(self.port, self.id, ani)
-
     def start(self):
         """start the listener"""
         # set up the socket
+        socket_OK = False
         context = zmq.Context()
         socket = context.socket(zmq.REP)
-        socket.bind("tcp://*:%s" % self.port)
-        #print "L [%d] : ProcessListener on port: %s" % (self.id, self.port)
+        while not socket_OK:
+            try:
+                socket.bind("tcp://*:%s" % self.port)
+                socket_OK  = True
+            except zmq.ZMQError:
+                print sys.exc_info()[0]
+                time.sleep(1)
 
         # set the worker going
-        ret_str, sge_script_fn = self.queueManager.makeSgeScript(self.scriptsDir,
+        ret_str, sge_script_fn = self.queueManager.makeSgeScript(self.sgeBaseDir,
                                                                  self.workingDir,
                                                                  self.id,
                                                                  self.gPath1,
@@ -146,8 +151,6 @@ class ProcessListener(object):
         # TODO: send the deets of this job off to an external management thread which
         # monitors the queue to make sure the job isn't just dropped. If it is then is can send
         # a "DIE" signal to this listener
-
-        #multiprocessing.Process(target=self.worker.start).start()
 
         # wait for result from worker and decode (blocking)
         result = jp.decode(socket.recv().decode("zlib"))
@@ -167,6 +170,7 @@ class ProcessListener(object):
                 # TODO use logging module
                 print self.id, self.gPath1, self.gPath2
                 print result[-1]
+
         result[1] = float(result[1])/1000.
 
         # place the result on the queue
@@ -221,7 +225,7 @@ class Server(object):
                  queueURL,       # the queue we'll be sending work to
                  commsPort,      # port we'll be asked for progress etc on
                  portRange,      # the total number of concurrent pairs we can handle
-                 scriptsDir,     # where to write SGE scripts to
+                 sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
                  batches=[]      # the order to do pairs in
                  ):
@@ -229,7 +233,7 @@ class Server(object):
         print "Processing outstanding pairs"
 
         # set tmp dirs
-        self.scriptsDir = scriptsDir
+        self.sgeBaseDir = sgeBaseDir
         self.workingDir = workingDir
 
         # get hold of the server queue
@@ -253,7 +257,7 @@ class Server(object):
         """Set up a worker to process pairs"""
         port_range = [int(i) for i in portRange.split(":")]
         port_range = range(port_range[0], port_range[1]+1)
-        num_threads = len(port_range)
+        num_threads = int(len(port_range)/2)
         if batch == None:
             print "Processing %d pairs on %d threads" % (len(pairs), num_threads)
         else:
@@ -277,10 +281,13 @@ class Server(object):
                                 port,
                                 result_queue,
                                 self.queueManager,
-                                self.scriptsDir,
+                                self.sgeBaseDir,
                                 self.workingDir,
                                 pairs[pair])
             all_procs.append(multiprocessing.Process(target=L.start).start())
+
+            # make sure we don't totally ambush the ssh server
+            time.sleep(1)
 
             # kill some time while we're waiting for some of the threads to clear
             while len(multiprocessing.active_children()) >= (num_threads + 1):

@@ -50,6 +50,8 @@ import zmq
 from subprocess import Popen, PIPE
 import jsonpickle as jp
 from string import maketrans
+import os
+import errno
 
 # local imports
 from trackm.hit import Hit
@@ -164,10 +166,14 @@ class ContigManager(object):
 
         NOTE: end > start ALWAYS!
         """
+        print "_".join([prefix, contigName])
+        print self.contigs[prefix][contigName][start-1:end]
+        print self.revComp(self.contigs[prefix][contigName][start-1:end])
+
         if strand == 0:     # take care of strandiness
-            return ("_".join[prefix, contigName], self.contigs[prefix][contigName][start-1:end])
+            return ("_".join([prefix, contigName]), self.contigs[prefix][contigName][start-1:end])
         else:
-            return ("_".join[prefix, contigName], self.revComp(self.contigs[prefix][contigName][start-1:end]))
+            return ("_".join([prefix, contigName]), self.revComp(self.contigs[prefix][contigName][start-1:end]))
 
     def revComp(self, seq):
         """Return the reverse complement of a sequence"""
@@ -212,6 +218,9 @@ class Worker(object):
         # essentially it will be a list of Hit instances
         self.results = [self.workID, int(ani*1000.)]
 
+        self.tmp_path = os.path.join('/srv/whitlam/home/users/uqmimelf/', str(self.workID), "_tmp")
+        self.makeSurePathExists(self.tmp_path)
+
     def runCommand(self, cmd):
         """Run a command and take care of stdout
 
@@ -241,6 +250,7 @@ class Worker(object):
             if ran_OK:
                 # parse nucmer .coords file
                 self.getHitData(minLength, minIdentity)
+
             else:
                 self.results.append("ERROR")
                 self.results.append(output)
@@ -251,20 +261,24 @@ class Worker(object):
             # can catch it here and return the exception to the
             # controlling server, that way it will know that the
             # job was aborted.
-            print exc_info()[0]
             self.results.append("ERROR")
             self.results.append(exc_info()[0])
-            raise
+            #raise
 
-        test = True
-        if test:
-            # write to file so we can see the hits
-            with open("/tmp/trackm.out",'w') as fh:
-                fh.write(jp.encode(self.results))
-        else:
-            # once all the comparisons are done (or have failed....)
-            # invoke phoneHome to send results back to the calling server
-            self.phoneHome()
+        # write to file so we can see the hits
+        with open(os.path.join(self.tmp_path, "trackm.out"),'w') as fh:
+            fh.write(jp.encode(self.results))
+
+        # once all the comparisons are done (or have failed....)
+        # invoke phoneHome to send results back to the calling server
+        self.phoneHome()
+
+    def makeSurePathExists(self, path):
+        try:
+            os.makedirs(path)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
 
     def getHitData(self, minLength, minIdentity):
         """Filter Nucmer hits and add them to the result list"""
@@ -280,10 +294,10 @@ class Worker(object):
         with open(self.gPath2,'r') as fh:
             CM.addContig(self.gid2, CP.readFasta(fh))
 
-        with open(os.path.join("out.coords" , 'r')) as fh:
+        with open("out.coords" , 'r') as fh:
             for hit in NP.readNuc(fh):
                 # apply filter >500bp and >99%
-                if hit[NP._IDENTITY] >= minIdentity and hit[NP._LEN_1] >= minLength and hit[NP._LEN_2] > minLength:
+                if hit[NP._IDENTITY] >= minIdentity and (hit[NP._LEN_1] >= minLength or hit[NP._LEN_2] >= minLength):
                     # work out strandedness + ensure that start < end ALWAYS!
                     if hit[NP._END_1] > hit[NP._START_1]:
                         # forward strand

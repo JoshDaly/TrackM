@@ -54,16 +54,6 @@ class SGE(object):
                  ):
         self.queueURL = queueURL
 
-    def runCommand(self, cmd):
-        """Run a command and take care of stdout
-
-        expects 'cmd' to be a string like "foo -b ar"
-
-        returns (stdout, stderr)
-        """
-        p = Popen(cmd.split(' '), stdout=PIPE)
-        return p.communicate()
-
     def makeSurePathExists(self, path):
         try:
             os.makedirs(path)
@@ -79,8 +69,8 @@ class SGE(object):
                 raise
 
     def makeSgeScript(self,
-                      sgeScriptsDir,        # full path to the location of sge scripts
-                      baseWorkingDir,       # full path to the working directory
+                      sgeBaseDir,           # full path to the location of sge stuffz
+                      localTmpDir,          # full path to the working directory
                       jobId,                # the unique id for this job (pid)
                       gPath1,               # full path to the first genome
                       gPath2,               # full path to the second genome
@@ -91,27 +81,30 @@ class SGE(object):
                       ):
         """Create an SGE script that will run a worker task"""
         # make the sge script
-        working_dir = os.path.join(baseWorkingDir, "job_%d" % jobId)
+        local_tmp_working_dir = os.path.join(localTmpDir, "job_%d" % jobId)
+        sge_scripts_dir = os.path.join(sgeBaseDir, "sgeScripts")
+        sge_tmp_dir = os.path.join(sgeBaseDir, "sgeTmp")
 
-        sge_base_fn = os.path.join(working_dir, "sge_%s" % jobId)
-        sge_out_fn = "%s.out" % sge_base_fn
-        sge_err_fn = "%s.err" % sge_base_fn
+        sge_out_fn = os.path.join(sge_tmp_dir, "sge_%s.out" % jobId)
+        sge_err_fn = os.path.join(sge_tmp_dir, "sge_%s.err" % jobId)
 
-        sge_script_fn = os.path.join(sgeScriptsDir, "job_%d.sh" % jobId)
+        sge_script_fn = os.path.join(sge_scripts_dir, "job_%d.sh" % jobId)
 
         ret_str = "#!/bin/bash\n"
         ret_str += "#$ -r y\n"
         ret_str += "#$ -o %s\n" % sge_out_fn
         ret_str += "#$ -e %s\n" % sge_err_fn
-        ret_str += "mkdir -p %s\n" % working_dir
-        ret_str += "cd %s\n" % working_dir
+        ret_str += "mkdir -p %s\n" % local_tmp_working_dir
+        ret_str += "cd %s\n" % local_tmp_working_dir
         ret_str += "module load trackm\n"
         ret_str += "module load mummer\n"
         ret_str += "trackm worker %d %s %s %s %s %0.3f %s\n" % (jobId, gPath1, gid1, gPath2, gid2, ani, url)
 
         # clean up the filesystem
         ret_str += "cd ..\n"
-        ret_str += "rm -rf %s\n" % working_dir
+        ret_str += "rm -rf %s\n" % local_tmp_working_dir
+        ret_str += "rm %s\n" % sge_out_fn
+        ret_str += "rm %s\n" % sge_err_fn
         ret_str += "rm %s\n" % sge_script_fn
         return (ret_str, sge_script_fn)
 
@@ -121,8 +114,8 @@ class SGE(object):
         """lodge an SGE job on the queue"""
         with open(scriptPath, 'w') as fh:
             fh.write(sgeStr)
-        return
-        self.runCommand("ssh -f %s 'qsub %s'" % (self.queueURL, scriptPath))
+        cmd_string = 'ssh -f %s "qsub -q lowmem %s"' % (self.queueURL, scriptPath)
+        os.system(cmd_string)
 
 ###############################################################################
 ###############################################################################

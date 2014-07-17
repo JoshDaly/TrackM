@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 ###############################################################################
 #                                                                             #
 #    trackm                                                                   #
@@ -85,7 +85,7 @@ def doWork(args):
             S.makeHits(args.queueURL,
                        args.commsPort,
                        args.portRange,
-                       args.scriptsDir,
+                       args.sgeBaseDir,
                        args.workingDir,
                        batches=bs)
 
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     hit_parser.add_argument("db", help="Path to the TrackM database to use")
     hit_parser.add_argument("queueURL", help="Information about the queue(s) to lodge pairs to")
     hit_parser.add_argument("portRange", help="Ports to listen for workers on <FROM:TO> (NOTE: decides threads as numPorts == numWorkers)")
-    hit_parser.add_argument("scriptsDir", help="Path to location for storing SGE scripts")
+    hit_parser.add_argument("sgeBaseDir", help="Path to location for storing SGE scripts and tmp files")
     hit_parser.add_argument("-w", "--workingDir", help="Path to location for storing tmp files", default="/tmp")
     hit_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular pair batches [-1 for all batches]")
     hit_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port used for getting progress etc")
