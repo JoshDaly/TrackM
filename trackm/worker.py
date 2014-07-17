@@ -218,8 +218,8 @@ class Worker(object):
         # essentially it will be a list of Hit instances
         self.results = [self.workID, int(ani*1000.)]
 
-        self.tmp_path = os.path.join('/srv/whitlam/home/users/uqmimelf/', str(self.workID), "_tmp")
-        self.makeSurePathExists(self.tmp_path)
+        #self.tmp_path = os.path.join('/srv/whitlam/home/users/uqmimelf/', str(self.workID), "_tmp")
+        #self.makeSurePathExists(self.tmp_path)
 
     def runCommand(self, cmd):
         """Run a command and take care of stdout
@@ -266,8 +266,8 @@ class Worker(object):
             #raise
 
         # write to file so we can see the hits
-        with open(os.path.join(self.tmp_path, "trackm.out"),'w') as fh:
-            fh.write(jp.encode(self.results))
+        #with open(os.path.join(self.tmp_path, "trackm.out"),'w') as fh:
+        #    fh.write(jp.encode(self.results))
 
         # once all the comparisons are done (or have failed....)
         # invoke phoneHome to send results back to the calling server

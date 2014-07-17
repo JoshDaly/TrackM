@@ -302,7 +302,7 @@ class Server(object):
 
         # make the list of tasks
         for pair in range(len(pairs)):
-            task_queue.put( Task(pairs[pair]) )
+            task_queue.put( HitTask(pairs[pair]) )
 
         # place poison pills and set up the listeners
         listeners = []
@@ -336,8 +336,8 @@ class Server(object):
         result_queue.put(None)
 
         # wait for it to complete
-        if updater_process is not None:
-            updater_process.join()
+        if result_handling_process is not None:
+            result_handling_process.join()
 
     def _updateHits(self, contigHeaders, resultQueue):
         while(True):
