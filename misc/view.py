@@ -182,7 +182,9 @@ class View(object):
                 HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = HD.getIDS() # working ids list   
-        
+        print HD.hits
+        print HD.length
+        print HD.distance
         
     def connect(self):
         """Try connect to the TrackM server"""
