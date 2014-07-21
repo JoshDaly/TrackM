@@ -171,7 +171,7 @@ class View(object):
                  #chartType
                  
         self.transfersFile = transfersFile
-        self.chartType = chartType
+        #self.chartType = chartType
         
     def readFile(self):
         HFP = HitFileParser()
