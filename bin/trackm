@@ -117,7 +117,7 @@ def doWork(args):
                    args.url)
 		W.compareGenomes(args.minLength, args.minIdentity)
 	
-	elif(args.subparser_name == 'view'):
+    elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
         V = View(args.trasfersFile,
                  args.chartType)
