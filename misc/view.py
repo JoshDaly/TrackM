@@ -224,14 +224,15 @@ class View(object):
             for id_2 in self.hits[id_1]:
                 G.add_edge(id_1,id_2) # loop through dict, and add edges
         
-        # edit edge properties
+        # edit edge properties # This needs to be edited to include the number of hits/genome size. 
         #for edge in G.edges():
         #    edgeWidth.append(int(ids_dict[edge[0]][edge[1]][0]))
         
-        values = [phylum_cols.get(node,0.25) for node in G.nodes()]
+        #values = [phylum_cols.get(node,0.25) for node in G.nodes()]
         
         pos= nx.spring_layout(G)
-        nx.draw(G,pos,node_color=values,with_labels=args.labels,width=edgeWidth,font_size=12,font_color='#006400')
+        #nx.draw(G,pos,node_color=values,with_labels=args.labels,width=edgeWidth,font_size=12,font_color='#006400')
+        nx.draw(G,pos,with_labels=True,font_size=12,font_color='#006400')
         #nx.draw(G,pos)
         plt.show() 
         
