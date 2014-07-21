@@ -222,7 +222,7 @@ class View(object):
         phylumCols = []
         for id_1 in self.hits.keys():
             for id_2 in self.hits[id_1]:
-                print id_1,id_2
+                print id_1,id_2,str(self.hits[id_1][id_2])
                 G.add_edge(id_1,id_2) # loop through dict, and add edges
         
         # edit edge properties # This needs to be edited to include the number of hits/genome size. 
