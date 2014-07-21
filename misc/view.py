@@ -157,7 +157,8 @@ class HitData(object):
     def addEdges(self):
         for id_1 in self.hits.keys():
             for id_2 in self.hits[id_1]:
-                print (id_1,id_2)
+                print id_1,id_2
+                #print (id_1,id_2)
         
 ###############################################################################
 ###############################################################################
@@ -223,7 +224,7 @@ class View(object):
         edgeColour=[]
         phylumCols = []
         HD.addEdges()
-        G.add_edge(*HD.addEdges()) # loop through dict, and add edges
+        #G.add_edge(*HD.addEdges()) # loop through dict, and add edges
         
         # edit edge properties
         for edge in G.edges():
