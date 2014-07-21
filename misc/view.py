@@ -222,7 +222,9 @@ class View(object):
         edgeWidth=[]
         edgeColour=[]
         phylumCols = []
-        HD.addEdges()
+        print HD.hits
+        print HD.length
+        print HD.distance
         #G.add_edge(*HD.addEdges()) # loop through dict, and add edges
         
         # edit edge properties
