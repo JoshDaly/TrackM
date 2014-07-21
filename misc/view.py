@@ -150,7 +150,8 @@ class HitData(object):
         except KeyError:
             self.hits[_ID_2] = {}
             self.hits[_ID_2] = {_ID_1 : 1}
-            
+          
+    def printHits(self):  
         print "*****************"
         for ida in self.hits.keys():
             for idb in self.hits[ida]:
@@ -181,7 +182,7 @@ class View(object):
                 HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
                 HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
-        
+        HD.printHits()
         self.workingIDs = HD.getIDS() # working ids list   
         self.hits = HD.hits           # hits dictionary 
         self.distance = HD.distance   # 16S distance dictionary
