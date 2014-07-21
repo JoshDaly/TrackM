@@ -155,8 +155,8 @@ class HitData(object):
         return self.hits.keys()
         
     def addEdges(self):
-        print "adding edges"
         for id_1 in self.hits.keys():
+            print id_1
             for id_2 in self.hits[id_1]:
                 print id_1,id_2
                 #print (id_1,id_2)
