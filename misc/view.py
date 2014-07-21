@@ -58,10 +58,10 @@ class HitFileParser(object):
     """class for parsing hit data files"""
     # constants for readability
     _UID     = 0  
-    _ID_1    = 2
-    _ID_2    = 11
-    _LGT_LEN = 7
-    _PERC_ID = -1
+    _ID_1    = 1
+    _ID_2    = 2
+    _LGT_LEN = 3
+    _PERC_ID = 4
     
     def __init__(self):
         self.prepped = False
