@@ -225,8 +225,8 @@ class View(object):
                 G.add_edge(id_1,id_2) # loop through dict, and add edges
         
         # edit edge properties
-        for edge in G.edges():
-            edgeWidth.append(int(ids_dict[edge[0]][edge[1]][0]))
+        #for edge in G.edges():
+        #    edgeWidth.append(int(ids_dict[edge[0]][edge[1]][0]))
         
         values = [phylum_cols.get(node,0.25) for node in G.nodes()]
         
