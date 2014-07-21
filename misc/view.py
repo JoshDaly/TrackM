@@ -166,9 +166,10 @@ class HitData(object):
 
 class View(object):
     def __init__(self,
-                 transfersFile,
-                 chartType
+                 transfersFile
                  ):
+                 #chartType
+                 
         self.transfersFile = transfersFile
         self.chartType = chartType
         
