@@ -42,7 +42,7 @@ __status__ = "Dev"
 
 # system imports
 import numpy as np
-import NetworkX as nx
+import networkx as nx
 import matplotlib.pyplot as plt
 
 # local imports
