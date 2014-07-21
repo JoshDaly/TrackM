@@ -153,13 +153,7 @@ class HitData(object):
             
     def getIDS(self):
         return self.hits.keys()
-        
-    def addEdges(self):
-        print self.hits
-        for id_1 in self.hits.keys():
-            for id_2 in self.hits[id_1]:
-                print id_1,id_2
-                #print (id_1,id_2)
+
         
 ###############################################################################
 ###############################################################################
@@ -181,10 +175,11 @@ class View(object):
                 HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
                 HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
+        
         self.workingIDs = HD.getIDS() # working ids list   
-        print HD.hits
-        print HD.length
-        print HD.distance
+        self.hits = HD.hits           # hits dictionary 
+        self.distance = HD.distance   # 16S distance dictionary
+        self.length = HD.length       # cumulative contig length dictionary
         
     def connect(self):
         """Try connect to the TrackM server"""
@@ -225,11 +220,9 @@ class View(object):
         edgeWidth=[]
         edgeColour=[]
         phylumCols = []
-        print self.workingIDs
-        print HD.hits
-        print HD.length
-        print HD.distance
-        #G.add_edge(*HD.addEdges()) # loop through dict, and add edges
+        for id_1 in self.hits.keys():
+            for id_2 in self.hits[id_1]:
+                G.add_edge(id_1,id_2) # loop through dict, and add edges
         
         # edit edge properties
         for edge in G.edges():
