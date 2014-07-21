@@ -41,6 +41,7 @@ import os
 import shutil
 import errno
 from subprocess import Popen, PIPE
+import time
 
 ###############################################################################
 ###############################################################################
@@ -115,7 +116,15 @@ class SGE(object):
         with open(scriptPath, 'w') as fh:
             fh.write(sgeStr)
         cmd_string = 'ssh -f %s "qsub -q lowmem %s"' % (self.queueURL, scriptPath)
-        os.system(cmd_string)
+        exit_state = os.system(cmd_string)
+        tries = 0
+        while exit_state != 0:  # ssh connection refused...
+            tries += 1
+            if tries > 20:
+                os.system("echo Another_%d_tries_%s__%s >> /srv/projects/trackm/sgeTmp/ssh_stuck" % (tries, scriptPath, str(exit_state)))
+                tries = 0
+            time.sleep(1)
+            os.system(cmd_string)
 
 ###############################################################################
 ###############################################################################
