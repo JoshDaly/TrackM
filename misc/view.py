@@ -178,7 +178,7 @@ class View(object):
         HD = HitData()
         with open(self.transfersFile,'r') as fh:
             for hit in HFP.readHit(fh):
-                print hit[HFP._ID_1],hit[HFP._ID_2],hit[HFP._PERC_ID]
+                print hit
                 HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
                 HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
