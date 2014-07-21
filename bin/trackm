@@ -115,7 +115,7 @@ def doWork(args):
                    args.gid2,
                    args.ani,
                    args.url)
-        W.compareGenomes(args.minLength, args.minIdentity)
+		W.compareGenomes(args.minLength, args.minIdentity)
 	
 	elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
