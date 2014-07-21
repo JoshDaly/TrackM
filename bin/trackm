@@ -119,13 +119,29 @@ def doWork(args):
 	
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
-        V = View(args.trasfersFile)
-                 #args.chartType)
+        V = View(args.trasfersFile,
+                 args.chartType)
         print "*******************************************************************************"
         print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
         print "*******************************************************************************"
         V.readFile()
-
+        if args.chartType == "Scatter":
+            print "*******************************************************************************"
+            print "                          Type Scatter plot                                    " 
+            print "*******************************************************************************"
+            pass
+        elif args.chartType == "Frequency":
+            print "*******************************************************************************"
+            print "                          Type Frequency plot                                  "
+            print "*******************************************************************************"
+            pass
+        else:
+            print "*******************************************************************************"
+            print "                          Type Network plot                                    "
+            print "*******************************************************************************"
+            V.networkPlot()
+        
+		
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
 
@@ -229,7 +245,7 @@ if __name__ == '__main__':
     #view_parser.add_argument("url", type=int, help="URL of the TrackM server")
     #view_parser.add_argument("port", type=int, help="Port the server is listening on")
     view_parser.add_argument("trasfersFile", help="csv file containing transfers")
-    #view_parser.add_argument("chartType", help="Plot to be produced; vocab: Network, Scatter, Frequency")
+    view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
 	
     #-------------------------------------------------
     # get and check options
