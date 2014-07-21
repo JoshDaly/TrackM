@@ -183,6 +183,7 @@ class View(object):
                 HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = HD.getIDS() # working ids list   
         
+        
     def connect(self):
         """Try connect to the TrackM server"""
         pass
@@ -222,6 +223,7 @@ class View(object):
         edgeWidth=[]
         edgeColour=[]
         phylumCols = []
+        print self.workingIDs
         print HD.hits
         print HD.length
         print HD.distance
