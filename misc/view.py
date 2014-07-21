@@ -143,11 +143,17 @@ class HitData(object):
         try: 
             self.hits[_ID_1][_ID_2] += 1
         except KeyError:
-            self.hits[_ID_1] = {_ID_2 : 1}
+            try:
+                self.hits[_ID_1][_ID_2] = 1
+            except KeyError:
+                self.hits[_ID_1] = {_ID_2 : 1}  
         try: 
             self.hits[_ID_2][_ID_1] += 1
         except KeyError:
-            self.hits[_ID_2] = {_ID_1 : 1}
+            try:
+                self.hits[_ID_2][_ID_1] = 1
+            except KeyError:
+                self.hits[_ID_2] = {_ID_1 : 1}
           
     def printHits(self):  
         print "*****************"
