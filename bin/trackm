@@ -45,7 +45,8 @@ import sys
 # local imports
 from trackm.worker import Worker
 from trackm.server import Server
-from trackm.view import View
+#from trackm.view import View
+from misc.view import View
 from trackm.exceptions import *
 
 ###############################################################################
@@ -115,7 +116,17 @@ def doWork(args):
                    args.ani,
                    args.url)
         W.compareGenomes(args.minLength, args.minIdentity)
+	
+	elif(args.subparser_name == 'view'):
+        # set up a TrackM view instance
+        V = View(args.trasfersFile,
+                 args.chartType)
+        print "*******************************************************************************"
+        print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
+        print "*******************************************************************************"
+        V.readFile()
 
+	"""
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
         V = View(args.url,
@@ -124,10 +135,11 @@ def doWork(args):
         print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
         print "*******************************************************************************"
         try:
-            V.connect()
-            V.plotSomething()
+            V.connect()  
+            V.plotSomething()  
         except:
             raise TM_ConnectionException("Could not connect to server (%s) on port: %s" % (args.url, args.port))
+    """
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
 
@@ -228,9 +240,11 @@ if __name__ == '__main__':
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                         help='Utilities for visualising HGT events and stats',
                                         description='Utilities for visualising HGT events and stats')
-    view_parser.add_argument("url", type=int, help="URL of the TrackM server")
-    view_parser.add_argument("port", type=int, help="Port the server is listening on")
-
+    #view_parser.add_argument("url", type=int, help="URL of the TrackM server")
+    #view_parser.add_argument("port", type=int, help="Port the server is listening on")
+	view_parser.add_argument("trasfersFile", help="csv file containing transfers")
+	view_parser.add_argument("chartType", help="Plot to be produced; vocab: Network, Scatter, Frequency")
+	
     #-------------------------------------------------
     # get and check options
     args = None
