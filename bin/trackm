@@ -126,20 +126,6 @@ def doWork(args):
         print "*******************************************************************************"
         V.readFile()
 
-"""
-elif(args.subparser_name == 'view'):
-# set up a TrackM view instance
-V = View(args.url,
-args.port)
-print "*******************************************************************************"
-print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
-print "*******************************************************************************"
-try:
-V.connect()  
-V.plotSomething()  
-except:
-raise TM_ConnectionException("Could not connect to server (%s) on port: %s" % (args.url, args.port))
-"""
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
 
