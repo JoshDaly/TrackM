@@ -119,7 +119,7 @@ def doWork(args):
 	
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
-        V = View(args.trasfersFile,
+        V = View(args.transfersFile,
                  args.chartType)
         print "*******************************************************************************"
         print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
@@ -127,17 +127,17 @@ def doWork(args):
         V.readFile()
         if args.chartType == "Scatter":
             print "*******************************************************************************"
-            print "                          Type Scatter plot                                    " 
+            print "                          Type :  Scatter plot                                    " 
             print "*******************************************************************************"
             pass
         elif args.chartType == "Frequency":
             print "*******************************************************************************"
-            print "                          Type Frequency plot                                  "
+            print "                          Type : Frequency plot                                  "
             print "*******************************************************************************"
             pass
         else:
             print "*******************************************************************************"
-            print "                          Type Network plot                                    "
+            print "                          Type : Network plot                                    "
             print "*******************************************************************************"
             V.networkPlot()
         
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                                         description='Utilities for visualising HGT events and stats')
     #view_parser.add_argument("url", type=int, help="URL of the TrackM server")
     #view_parser.add_argument("port", type=int, help="Port the server is listening on")
-    view_parser.add_argument("trasfersFile", help="csv file containing transfers")
+    view_parser.add_argument("transfersFile", help="csv file containing transfers")
     view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
 	
     #-------------------------------------------------

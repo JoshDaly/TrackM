@@ -44,6 +44,7 @@ __status__ = "Dev"
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import math
 
 # local imports
 from trackm.exceptions import *
@@ -110,13 +111,18 @@ class HitData(object):
         try: 
             self.length[_ID_1][_ID_2] += _LGT_LEN
         except KeyError:
-            self.length[_ID_1] = {}
-            self.length[_ID_1][_ID_2] = _LGT_LEN
+            try:
+                self.length[_ID_1][_ID_2]  = _LGT_LEN
+            except KeyError:
+                self.length[_ID_1] = {_ID_2 : _LGT_LEN}
+        
         try: 
             self.length[_ID_2][_ID_1] += _LGT_LEN
         except KeyError:
-            self.length[_ID_2] = {}
-            self.length[_ID_2][_ID_1] = _LGT_LEN
+            try:
+                self.length[_ID_2][_ID_1] = _LGT_LEN
+            except KeyError:
+                self.length[_ID_2] = {_ID_1 : _LGT_LEN}
                     
     def add16SDist(self,
                    _ID_1,
@@ -127,13 +133,11 @@ class HitData(object):
         try: 
             self.distance[_ID_1][_ID_2] = _PERC_ID
         except KeyError:
-            self.distance[_ID_1] = {}
-            self.distance[_ID_1][_ID_2] = _PERC_ID
+            self.distance[_ID_1] = {_ID_2 : _PERC_ID}
         try: 
             self.distance[_ID_2][_ID_1] = _PERC_ID
         except KeyError:
-            self.distance[_ID_2] = {}
-            self.distance[_ID_2][_ID_1] = _PERC_ID
+            self.distance[_ID_2] = {_ID_1 : _PERC_ID}
                 
     def addHit(self,
                _ID_1,
@@ -154,13 +158,6 @@ class HitData(object):
                 self.hits[_ID_2][_ID_1] = 1
             except KeyError:
                 self.hits[_ID_2] = {_ID_1 : 1}
-          
-    def printHits(self):  
-        print "*****************"
-        for ida in self.hits.keys():
-            for idb in self.hits[ida]:
-                print ida,idb 
-        print "*****************"
             
     def getIDS(self):
         return self.hits.keys()
@@ -179,19 +176,18 @@ class View(object):
         self.chartType = chartType
         
     def readFile(self):
+        """read data from csv file, and capture as object"""
         HFP = HitFileParser()
-        HD = HitData()
+        self.HD = HitData()
         with open(self.transfersFile,'r') as fh:
             for hit in HFP.readHit(fh):
-                HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
-                HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
-                HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
-        HD.printHits()
+                self.HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
+                self.HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
+                self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = HD.getIDS() # working ids list   
-        self.hits = HD.hits           # hits dictionary 
-        self.distance = HD.distance   # 16S distance dictionary
-        self.length = HD.length       # cumulative contig length dictionary
-        
+
+        print self.HD.distance
+
     def connect(self):
         """Try connect to the TrackM server"""
         pass
@@ -231,8 +227,8 @@ class View(object):
         edgeWidth=[]
         edgeColour=[]
         phylumCols = []
-        for id_1 in self.hits.keys():
-            for id_2 in self.hits[id_1]:
+        for id_1 in self.HD.hits.keys():
+            for id_2 in self.HD.hits[id_1]:
                 #print id_1,id_2,str(self.hits[id_1][id_2])
                 G.add_edge(id_1,id_2) # loop through dict, and add edges
         
@@ -254,7 +250,7 @@ class View(object):
         
            per 100 comparisons relative the ANI distance between the two genomes
         """
-        pass
+        
         
         
     
