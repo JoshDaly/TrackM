@@ -172,7 +172,19 @@ class HitData(object):
                     self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
                 except KeyError:
                     self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
-        
+    def numHits16S(self):
+        """print stats about the number of hits in the roundedDistance dict"""
+        for perc in self.roundedDistance.keys():
+            totalPerPercent = 0
+            length = len(self.roundedDistance[perc])
+            for i in self.roundedDistance[perc]:
+                totalPerPercent = totalPerPercent + i
+            print "Total hits %f: %i" % (perc,totalPerPercent)
+            print "Number of comparisons %f: %i" % (perc,length)
+            print "Average hits %f: %f" % (perc,totalPerPercent/float(length))
+            print "Min number of hits %f: %i" % (perc, min(self.roundedDistance[perc]))
+            print "Max number of hits %f: %i" % (perc, max(self.roundedDistance[perc]))
+            
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -197,7 +209,7 @@ class View(object):
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
         
-        print self.HD.roundedDistance
+        print self.HD.numHits16S()
         
     def connect(self):
         """Try connect to the TrackM server"""
