@@ -98,9 +98,10 @@ class HitFileParser(object):
 class HitData(object):
     """class for capturing hit data"""
     def __init__(self):
-        self.hits       = {} # dict to store hit data
-        self.length     = {} # dict to store length data
-        self.distance   = {} # dict to store 16S distance
+        self.hits            = {} # dict to store hit data
+        self.length          = {} # dict to store length data
+        self.distance        = {} # dict to store 16S distance
+        self.roundedDistance = {} # dict to store rounded 16S distance and total hits per 100 comparisons
     
     def addLen(self,
                _ID_1,
@@ -129,7 +130,7 @@ class HitData(object):
                    _ID_2,
                    _PERC_ID
                    ): 
-        """create 16S distance object"""
+        """create 16S distance object, round up %"""
         try: 
             self.distance[_ID_1][_ID_2] = math.ceil(_PERC_ID)
         except KeyError:
@@ -160,8 +161,17 @@ class HitData(object):
                 self.hits[_ID_2] = {_ID_1 : 1}
             
     def getIDS(self):
+        """return array of IDs"""
         return self.hits.keys()
 
+    def groupBy16S(self):
+        """calculate the number of transfers per rounded 16S score"""
+        for id_1 in self.hits.keys():
+            for id_2 in self.hits[id_1]:
+                try:
+                    self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
+                except KeyError:
+                    self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
         
 ###############################################################################
 ###############################################################################
@@ -185,9 +195,10 @@ class View(object):
                 self.HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
-
-        print self.HD.distance
-
+        self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
+        
+        print self.HD.roundedDistance
+        
     def connect(self):
         """Try connect to the TrackM server"""
         pass
@@ -250,7 +261,8 @@ class View(object):
         
            per 100 comparisons relative the ANI distance between the two genomes
         """
-        
+        # group by 16S distance
+        pass
         
         
     
