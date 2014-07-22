@@ -301,7 +301,7 @@ class View(object):
             stdev.append(self.HD.calculateStD(perc))
         
         # Build plot
-        plt.scatter(x, y, marker='|', s=stdev)
+        plt.scatter(x, y, marker='|', s=10)
         plt.plot(x,y, linestyle='-')
         plt.axis([100,75,0,10])
         plt.xlabel('16S distance (%)')
