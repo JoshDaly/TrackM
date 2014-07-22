@@ -283,7 +283,8 @@ class View(object):
         y = [ i[1] for i in data ]
         
         # Build plot
-        plt.scatter(x, y, linestyle='-', marker='|')
+        plt.scatter(x, y, marker='|')
+        plt.plot(x,y, linestyle='-')
         plt.axis([100,75,0,10])
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
