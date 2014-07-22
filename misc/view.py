@@ -88,6 +88,18 @@ class HitFileParser(object):
                        )
             break # done! 
 
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class DistanceFileParser(object):
+    # constants for readability
+    
+    
+    def __init__(self):
+        
+
 
 ###############################################################################
 ###############################################################################
@@ -296,6 +308,8 @@ class View(object):
         """Produces a line graph showing the frequency of LGT between genomes
         
            per 100 comparisons relative the ANI distance between the two genomes
+        
+        NEEDS TO INCORPORATE ALL COMPARISONS, NOT JUST THE ONES THAT HAD AN LGT EVENT!!!!
         """
         # group by 16S distance
         x,y = self.HD.normaliseHits()
