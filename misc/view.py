@@ -292,8 +292,9 @@ class View(object):
         for perc in self.HD.roundedDistance.keys():
             x.append(perc)
             y.append(self.HD.roundedDistance[perc])
-        print x
-        print y
+        plt.plot(x,y,'ro')
+        plt.axis([100,75,0,10])
+        plt.show() # plot 
         
     
     
