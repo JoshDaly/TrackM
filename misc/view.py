@@ -170,12 +170,11 @@ class HitData(object):
             for id_2 in self.hits[id_1]:
                 try:
                     #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] += self.hits[id_1][id_2]
+                    self.roundedDistance[self.distance[id_1][id_2]] += float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
                 except KeyError:
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]
-                    
-    
+                    self.roundedDistance[self.distance[id_1][id_2]] = float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
+
                     
     def numHits16S(self):
         """print stats about the number of hits in the roundedDistance dict"""
@@ -216,7 +215,7 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        print self.HD.roundedDistance
+        
         
     def connect(self):
         """Try connect to the TrackM server"""
