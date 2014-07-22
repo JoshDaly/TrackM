@@ -237,6 +237,7 @@ class View(object):
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
         
         print self.HD.roundedDistance[88]
+        print self.HD.standardDeviation[88]
         
     def connect(self):
         """Try connect to the TrackM server"""
