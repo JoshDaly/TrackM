@@ -299,6 +299,8 @@ class View(object):
         """
         # group by 16S distance
         x,y = self.HD.normaliseHits()
+        print x
+        print y
         
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
