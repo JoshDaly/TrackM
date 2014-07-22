@@ -182,9 +182,8 @@ class HitData(object):
         """return the standard deviation for each percentage"""
         hitList = []
         hitList = self.standardDeviation[perc]
-        print hitList
-        stdev = np.append(self.standardDeviation[perc])
-        return  np.std(hitsList, dtype=np.float64)  
+        stdev = np.append(hitList)
+        return  np.std(stdev, dtype=np.float64)  
         
         
                     
