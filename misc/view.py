@@ -171,13 +171,27 @@ class HitData(object):
             for id_2 in self.hits[id_1]:
                 try:
                     #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] += float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
-                    self.standardDeviation[self.distance[id_1][id_2]] += [float(self.hits[id_1][id_2]) / 100] # 
+                    self.roundedDistance[self.distance[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
+                    self.standardDeviation[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
                 except KeyError:
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] = float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
-                    self.standardDeviation[self.distance[id_1][id_2]] = [float(self.hits[id_1][id_2]) / 100] #
-                    
+                    self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
+                    self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
+    
+    def sortedPercetages(self):
+        x = self.standardDeviation.keys()
+        return x.sort()
+      
+    def normaliseHits(self):  
+        """normalise hits per 100 comparisons"""
+        percList = self.sortedPercetages()
+        normalisedHits = []
+        for perc in percList:
+            x = len(self.standardDeviation[perc])/float(100)
+            normalised = self.roundedDistance[perc] / float(x)
+            normalisedHits.append(normalised)
+        return percList,normalisedHits
+                  
     def calculateStD(self,perc):
         """return the standard deviation for each percentage"""
         hitList = []
@@ -185,9 +199,6 @@ class HitData(object):
         stdev = np.array(hitList)
         #print  str(np.std(stdev, dtype=np.float64))
         return  np.std(stdev, dtype=np.float64) 
-        
-        
-        
                     
     def numHits16S(self):
         """print stats about the number of hits in the roundedDistance dict"""
@@ -290,18 +301,7 @@ class View(object):
            per 100 comparisons relative the ANI distance between the two genomes
         """
         # group by 16S distance
-        data = [] 
-        for perc in self.HD.roundedDistance.keys():
-            data.append([perc,self.HD.roundedDistance[perc]])
-            
-        data.sort() # sort data by x value
-        x = [ i[0] for i in data ]
-        y = [ i[1] for i in data ]
-        stdev = []
-        
-        # calculate standard deviation
-        for perc in x:
-            stdev.append(self.HD.calculateStD(perc))
+        x,y = self.HD.normaliseHits()
         
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
