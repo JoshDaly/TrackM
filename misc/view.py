@@ -179,11 +179,14 @@ class HitData(object):
             length = len(self.roundedDistance[perc])
             for i in self.roundedDistance[perc]:
                 totalPerPercent = totalPerPercent + i
-            print "Total hits %f: %i" % (perc,totalPerPercent)
-            print "Number of comparisons %f: %i" % (perc,length)
-            print "Average hits %f: %f" % (perc,totalPerPercent/float(length))
-            print "Min number of hits %f: %i" % (perc, min(self.roundedDistance[perc]))
-            print "Max number of hits %f: %i" % (perc, max(self.roundedDistance[perc]))
+            print "********************************************************************"
+            print "%i" % (perc)
+            print "Total hits: %i" % (totalPerPercent)
+            print "Number of comparisons: %i" % (length)
+            print "Average hits: %f" % (totalPerPercent/float(length))
+            print "Min number of hits: %i" % (min(self.roundedDistance[perc]))
+            print "Max number of hits: %i" % (max(self.roundedDistance[perc]))
+            print "********************************************************************"
             
 ###############################################################################
 ###############################################################################
