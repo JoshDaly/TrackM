@@ -169,9 +169,14 @@ class HitData(object):
         for id_1 in self.hits.keys():
             for id_2 in self.hits[id_1]:
                 try:
-                    self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
+                    #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
+                    self.roundedDistance[self.distance[id_1][id_2]] += self.hits[id_1][id_2]
                 except KeyError:
-                    self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
+                    #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
+                    self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]
+                    
+    
+                    
     def numHits16S(self):
         """print stats about the number of hits in the roundedDistance dict"""
         for perc in self.roundedDistance.keys():
@@ -211,8 +216,7 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        
-        print self.HD.numHits16S()
+        print self.HD.roundedDistance
         
     def connect(self):
         """Try connect to the TrackM server"""
@@ -277,7 +281,7 @@ class View(object):
            per 100 comparisons relative the ANI distance between the two genomes
         """
         # group by 16S distance
-        pass
+        
         
         
     
