@@ -119,8 +119,7 @@ def doWork(args):
 	
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
-        V = View(args.transfersFile,
-                 args.chartType)
+        V = View(args.transfersFile)
         print "*******************************************************************************"
         print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
         print "*******************************************************************************"
@@ -129,7 +128,7 @@ def doWork(args):
             print "*******************************************************************************"
             print "                          Type :  Scatter plot                                    " 
             print "*******************************************************************************"
-            pass
+            V.scatterPlot()
         elif args.chartType == "Frequency":
             print "*******************************************************************************"
             print "                          Type : Frequency plot                                  "

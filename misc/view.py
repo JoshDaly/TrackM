@@ -207,10 +207,9 @@ class HitData(object):
 
 class View(object):
     def __init__(self,
-                 transfersFile,
-                 chartType):
+                 transfersFile
+                 ):
         self.transfersFile = transfersFile
-        self.chartType = chartType
         
     def readFile(self):
         """read data from csv file, and capture as object"""
@@ -227,18 +226,6 @@ class View(object):
     def connect(self):
         """Try connect to the TrackM server"""
         pass
-
-    def plotSomething(self):
-        """Place holder"""
-        # an example entry point from the main TrackM entry point
-        # Ideally, you should have a separate plot function
-        # defined for each type of plot.
-
-        # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
-        from inspect import currentframe, getframeinfo
-        frameinfo = getframeinfo(currentframe())
-        print "Make me plot something! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
-        # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
 
     def scatterPlot(self):
         """Produces a scatter plot indicating the number of lgt events
@@ -291,12 +278,12 @@ class View(object):
         for perc in self.HD.roundedDistance.keys():
             data.append([perc,self.HD.roundedDistance[perc]])
             
-            #x.append(perc)
-            #y.append(self.HD.roundedDistance[perc])
-        data.sort()
+        data.sort() # sort data by x value
         x = [ i[0] for i in data ]
         y = [ i[1] for i in data ]
-        plt.plot(x, y, linestyle='-', marker='o')
+        
+        # Build plot
+        plt.scatter(x, y, linestyle='-', marker='|')
         plt.axis([100,75,0,10])
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
