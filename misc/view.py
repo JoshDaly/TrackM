@@ -287,11 +287,15 @@ class View(object):
            per 100 comparisons relative the ANI distance between the two genomes
         """
         # group by 16S distance
-        x = []
-        y = [] 
+        data = [] 
         for perc in self.HD.roundedDistance.keys():
-            x.append(perc)
-            y.append(self.HD.roundedDistance[perc])
+            data.append([perc,self.HD.roundedDistance[perc]])
+            
+            #x.append(perc)
+            #y.append(self.HD.roundedDistance[perc])
+        data.sort()
+        x = [ i[0] for i in data ]
+        y = [ i[1] for i in data ]
         plt.plot(x, y, linestyle='-', marker='o')
         plt.axis([100,75,0,10])
         plt.xlabel('16S distance (%)')
