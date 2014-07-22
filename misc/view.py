@@ -292,10 +292,13 @@ class View(object):
         for perc in self.HD.roundedDistance.keys():
             x.append(perc)
             y.append(self.HD.roundedDistance[perc])
-        plt.plot(x,y,'ro')
+        plt.plot(x, y, linestyle='-', marker='ro')
         plt.axis([100,75,0,10])
+        plt.xlabel('16S distance (%)')
+        plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
         
+
     
     
     
