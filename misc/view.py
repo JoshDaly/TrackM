@@ -192,6 +192,14 @@ class HitData(object):
             print "Max number of hits: %i" % (max(self.roundedDistance[perc]))
             print "********************************************************************"
             
+    def return16SPercArray(self):
+        """return array of rounded 16S percentages """
+        return self.roundedDistance.keys()
+        
+    def returnNormValues(self):
+        """return array of hits normalised by 100 comparisons per rounded 16S score"""
+        return 
+    
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -215,7 +223,6 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        print self.HD.roundedDistance
         
     def connect(self):
         """Try connect to the TrackM server"""
@@ -274,14 +281,19 @@ class View(object):
         plt.show() 
         
         
-    def lgtFrequency(self):
+    def frequencyPlot(self):
         """Produces a line graph showing the frequency of LGT between genomes
         
            per 100 comparisons relative the ANI distance between the two genomes
         """
         # group by 16S distance
-        
-        
+        x = []
+        y = [] 
+        for perc in self.HD.roundedDistance.keys():
+            x.append(perc)
+            y.append(self.HD.roundedDistance[perc])
+        print x
+        print y
         
     
     
