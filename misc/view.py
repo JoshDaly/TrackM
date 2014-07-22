@@ -215,7 +215,7 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        
+        print self.HD.roundedDistance
         
     def connect(self):
         """Try connect to the TrackM server"""
