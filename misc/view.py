@@ -184,7 +184,7 @@ class View(object):
                 self.HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
                 self.HD.addHit(hit[HFP._ID_1], hit[HFP._ID_2])
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
-        self.workingIDs = HD.getIDS() # working ids list   
+        self.workingIDs = self.HD.getIDS() # working ids list   
 
         print self.HD.distance
 
