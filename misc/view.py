@@ -183,7 +183,8 @@ class HitData(object):
         hitList = []
         hitList = self.standardDeviation[perc]
         stdev = np.array(hitList)
-        return  np.std(stdev, dtype=np.float64)  
+        return  np.std(stdev, dtype=np.float64) 
+        print  str(np.std(stdev, dtype=np.float64))
         
         
                     
