@@ -98,10 +98,11 @@ class HitFileParser(object):
 class HitData(object):
     """class for capturing hit data"""
     def __init__(self):
-        self.hits            = {} # dict to store hit data
-        self.length          = {} # dict to store length data
-        self.distance        = {} # dict to store 16S distance
-        self.roundedDistance = {} # dict to store rounded 16S distance and total hits per 100 comparisons
+        self.hits               = {} # dict to store hit data
+        self.length             = {} # dict to store length data
+        self.distance           = {} # dict to store 16S distance
+        self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
+        self.standardDeviation  = {} # dict to store standard deviation at each percentage
     
     def addLen(self,
                _ID_1,
@@ -171,10 +172,19 @@ class HitData(object):
                 try:
                     #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] += float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
+                    self.standardDeviation[self.distance[id_1][id_2]] += [float(self.hits[id_1][id_2]) / 100] # 
                 except KeyError:
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = float(self.hits[id_1][id_2]) / 100 # normalise by 100 comparisons
-
+                    self.standardDeviation[self.distance[id_1][id_2]] = [float(self.hits[id_1][id_2]) / 100] #
+                    
+    def calculateStD(self,perc):
+        """return the standard deviation for each percentage"""
+        hitList = []
+        hitList = np.append(self.standardDeviation[perc])
+        return  np.std(hitsList, dtype=np.float64)  
+        
+        
                     
     def numHits16S(self):
         """print stats about the number of hits in the roundedDistance dict"""
@@ -281,9 +291,14 @@ class View(object):
         data.sort() # sort data by x value
         x = [ i[0] for i in data ]
         y = [ i[1] for i in data ]
+        stdev = []
+        
+        # calculate standard deviation
+        for perc in x:
+            stdev.append(self.HD.calculateStD(perc))
         
         # Build plot
-        plt.scatter(x, y, marker='|')
+        plt.scatter(x, y, marker='|', s=stdev)
         plt.plot(x,y, linestyle='-')
         plt.axis([100,75,0,10])
         plt.xlabel('16S distance (%)')
