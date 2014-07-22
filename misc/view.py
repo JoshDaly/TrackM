@@ -131,13 +131,13 @@ class HitData(object):
                    ): 
         """create 16S distance object"""
         try: 
-            self.distance[_ID_1][_ID_2] = _PERC_ID
+            self.distance[_ID_1][_ID_2] = math.ceil(_PERC_ID)
         except KeyError:
-            self.distance[_ID_1] = {_ID_2 : _PERC_ID}
+            self.distance[_ID_1] = {_ID_2 : math.ceil(_PERC_ID)}
         try: 
-            self.distance[_ID_2][_ID_1] = _PERC_ID
+            self.distance[_ID_2][_ID_1] = math.ceil(_PERC_ID)
         except KeyError:
-            self.distance[_ID_2] = {_ID_1 : _PERC_ID}
+            self.distance[_ID_2] = {_ID_1 : math.ceil(_PERC_ID)}
                 
     def addHit(self,
                _ID_1,
