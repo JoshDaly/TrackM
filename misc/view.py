@@ -419,6 +419,8 @@ class View(object):
         percList.sort()
         normalisedHits = []
         for perc in percList:
+            normalised = 0
+            standardised = []
             try:
                 #print str(perc),self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc]
                 x = self.DD.roundedComparisons[perc]/float(100)
@@ -427,8 +429,19 @@ class View(object):
                 x = 1
                 normalised = 0 
             normalisedHits.append(normalised)
-             
             # calculate standard deviation
+            hitList   = self.HD.standardDeviation[perc] # list of hits 
+            fullHitList = self.DD.roundedComparisons[perc] # int 
+            print "*******************"
+            print str(len(hitList)),str(fullHitList)
+            print "*******************"
+            
+            
+            
+            
+            
+            
+            
             try:
                 print perc, self.HD.calculateStD(perc)
             except KeyError:
