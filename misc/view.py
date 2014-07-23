@@ -418,9 +418,9 @@ class View(object):
         percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
         percList.sort()
         normalisedHits = []
+        standardised = []
         for perc in percList:
             normalised = 0
-            standardised = []
             try:
                 #print str(perc),self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc]
                 x = self.DD.roundedComparisons[perc]/float(100)
