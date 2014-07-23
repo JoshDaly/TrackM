@@ -428,7 +428,10 @@ class View(object):
             normalisedHits.append(normalised)
              
             # calculate standard deviation
-            print perc, self.HD.calculateStD(perc)
+            try:
+                print perc, self.HD.calculateStD(perc)
+            except KeyError:
+                pass
             
             
         x,y = percList,normalisedHits
