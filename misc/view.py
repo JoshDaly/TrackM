@@ -359,6 +359,21 @@ class View(object):
         #print self.HD.roundedDistance[88]
         #print self.HD.standardDeviation[88]
         
+    def normaliseHits(self):
+        """normalise hits per 100 comparisons"""
+        percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
+        percList.sort()
+        normalisedHits = []
+        for perc in percList:
+            try:
+                x = self.DD.roundedComparisons[perc]/float(100)
+                normalised = self.roundedDistance[perc] / float(x)
+            except KeyError: # no hits at that percentage
+                x = 1
+                normalised = 0 
+            normalisedHits.append(normalised)
+        return percList,normalisedHits
+        
     def connect(self):
         """Try connect to the TrackM server"""
         pass
@@ -443,21 +458,6 @@ class View(object):
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
-        
-    def normaliseHits(self):
-        """normalise hits per 100 comparisons"""
-        percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
-        percList.sort()
-        normalisedHits = []
-        for perc in percList:
-            try:
-                x = self.DD.roundedComparisons[perc]/float(100)
-                normalised = self.roundedDistance[perc] / float(x)
-            except KeyError: # no hits at that percentage
-                x = 1
-                normalised = 0 
-            normalisedHits.append(normalised)
-        return percList,normalisedHits
     
     
     
