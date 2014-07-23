@@ -453,7 +453,7 @@ class View(object):
             plt.plot([x[i],x[i]],[y[i]-standardised[i],y[i]+standardised[i]],'k')
         plt.axis([100,75,0,max(y)+10])
         plt.xlabel('16S distance (%)')
-        plt.ylabel('HGT per 100 comparisons')
+        plt.ylabel('LGT per 100 comparisons')
         plt.show() # plot 
     
     
