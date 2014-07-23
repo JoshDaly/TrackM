@@ -283,17 +283,6 @@ class HitData(object):
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
-            
-    def normaliseHits(self):  
-        """normalise hits per 100 comparisons"""
-        percList = self.standardDeviation.keys()
-        percList.sort()
-        normalisedHits = []
-        for perc in percList:
-            x = len(self.standardDeviation[perc])/float(100)
-            normalised = self.roundedDistance[perc] / float(x)
-            normalisedHits.append(normalised)
-        return percList,normalisedHits
                   
     def calculateStD(self,perc):
         """return the standard deviation for each percentage"""
@@ -437,9 +426,17 @@ class View(object):
                 x = 1
                 normalised = 0 
             normalisedHits.append(normalised)
+             
+            # calculate standard deviation
+            print perc, self.HD.calculateStD(perc)
+            
+            
         x,y = percList,normalisedHits
         #print x
         #print y
+        
+        
+        
         
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
