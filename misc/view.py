@@ -420,7 +420,7 @@ class View(object):
         # read in comparisons file
         with open(comparisonsFile,'r') as fh:
             for hit in DFP.readFile(fh):
-                 self.DD.addComparison(hit[DFP._IMG_ID_1]], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
+                 self.DD.addComparison(hit[DFP._IMG_ID_1], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
         self.DD.collapse16S() # calculate no. of comparisons at each rounded 16S distance
         
         print self.DD.roundedComparisons
