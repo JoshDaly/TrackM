@@ -432,7 +432,7 @@ class View(object):
         print self.DD.roundedComparisons
         
         # group by 16S distance
-        x,y = self.HD.normaliseHits()
+        x,y = normaliseHits()
         print x
         print y
         
@@ -444,8 +444,20 @@ class View(object):
         plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
         
-
-    
+    def normaliseHits(self):
+        """normalise hits per 100 comparisons"""
+        percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
+        percList.sort()
+        normalisedHits = []
+        for perc in percList:
+            try:
+                x = self.DD.roundedComparisons[perc]/float(100)
+                normalised = self.roundedDistance[perc] / float(x)
+            except KeyError: # no hits at that percentage
+                x = 1
+                normalised = 0 
+            normalisedHits.append(normalised)
+        return percList,normalisedHits
     
     
     
