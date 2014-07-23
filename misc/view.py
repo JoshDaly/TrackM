@@ -496,7 +496,7 @@ class View(object):
                 normalise = self.HD.roundedDistance[perc] / float(c)
             except KeyError:
                 normalise = 0 
-            normalisedHits.append(normalised)
+            normalisedHits.append(normalise)
             try: 
                 normaliseDirty = self.DD.dirtyRoundedHits[perc] / float(c)
             except KeyError:
