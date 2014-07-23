@@ -454,11 +454,6 @@ class View(object):
         plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
     
-            
-    def normaliseHits(self):
-        
-    
-    
     
     
 ###############################################################################
