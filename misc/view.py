@@ -524,7 +524,7 @@ class View(object):
         plt.scatter(x, y, marker='|') 
         plt.plot(x,y, linestyle='-')
         # dirty 
-        plt.scatter(xd, yd, mark='|') # dirty
+        plt.scatter(xd, yd, marker='|') # dirty
         plt.plot(xd,yd, linestyle='-')
         # add error bars
         for i in range(len(x)):
