@@ -436,12 +436,12 @@ class View(object):
                 zerosToAdd = fullHitList - len(hitList)
                 for i in range(zerosToAdd):
                     hitList.append(0)
-                print hitList
+                #print hitList
                 stdDev = np.array(hitList)
                 standardised.append(np.std(stdDev, dtype=np.float64))
+                print standardised
             except KeyError:
                 standardised.append(0)
-        print standardised
 
         x,y = percList,normalisedHits
         #print x
