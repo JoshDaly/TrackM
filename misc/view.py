@@ -415,7 +415,7 @@ class View(object):
         # read in id look up file
         with open(lookUpFile,'r') as fh:
             for hit in IDFP.readFile(fh):
-                self.DD.addIDS(hit[IDFP._IMG_ID]], hit[IDFP._GT_ID])
+                self.DD.addIDS(hit[IDFP._IMG_ID], hit[IDFP._GT_ID])
             
         # read in comparisons file
         with open(comparisonsFile,'r') as fh:
