@@ -444,7 +444,7 @@ class View(object):
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
         plt.plot(x,y, linestyle='-')
-        plt.axis([100,75,0,max(y)+10])
+        plt.axis([100,75,0,100])
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
