@@ -477,7 +477,7 @@ class View(object):
 
         with open(dirtyFile,'r') as fh:
             for hit in DHFP.readHit(fh):
-                self.DD.addDirtyHit(hit[DHFP._ID_1]], hit[DHFP._ID_2]])
+                self.DD.addDirtyHit(hit[DHFP._ID_1], hit[DHFP._ID_2])
         self.DD.getDirty16S() # creates 16S -> hits
         
         #normalise hits per 100 comparisons
