@@ -87,6 +87,39 @@ class HitFileParser(object):
                         float(fields[-1])]
                        )
             break # done! 
+        
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class DirtyHitFileParser(object):
+    """class for parsing hit data files"""
+    # constants for readability 
+    _ID_1    = 0
+    _LGT_LEN = 1
+    _ID_2    = 2
+    
+    def __init__(self):
+        self.prepped = False
+    
+    def readHit(self, # this is a generator function
+                fh 
+                ):
+        while True:
+            if not self.prepped:
+                # we still need to strip out the header
+                for l in fh:
+                    if l[0] == "i": # header line
+                        self.prepped = True
+                        break
+            # file should be prepped now
+            for l in fh:
+                fields = l.split("\t")
+                yield ([fields[1],
+                        fields[6],
+                        fields[8]])
+            break # done!
 
 ###############################################################################
 ###############################################################################
@@ -215,6 +248,8 @@ class HitData(object):
         self.distance           = {} # dict to store 16S distance
         self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
         self.standardDeviation  = {} # dict to store standard deviation at each percentage
+        self.dirtyHits          = {} # dict to store dirty hit data
+        self.dirtyLength        = {} # dict to store dirty length data
     
     def addLen(self,
                _ID_1,
@@ -265,6 +300,27 @@ class HitData(object):
                 self.hits[_ID_1][_ID_2] = 1
             except KeyError:
                 self.hits[_ID_1] = {_ID_2 : 1}  
+
+    def addDirtyHit(self,
+                    _ID_1,
+                    _ID_2):
+        """add an LGT instance to the dirty data store"""
+        try:
+            self.dirtyHits[_ID_1][_ID_2] +=1 
+        except KeyError:
+            try:
+                self.dirtyHits[_ID_1][_ID_2] = 1
+            except KeyError:
+                self.dirtyHits[_ID_1] = {_ID_2 : 1}
+        # both directions
+        try:
+            self.dirtyHits[_ID_2][_ID_1] +=1 
+        except KeyError:
+            try:
+                self.dirtyHits[_ID_2][_ID_1] = 1
+            except KeyError:
+                self.dirtyHits[_ID_2] = {_ID_1 : 1}
+
 
             
     def getIDS(self):
@@ -332,6 +388,7 @@ class View(object):
         """read data from csv file, and capture as object"""
         HFP = HitFileParser()
         self.HD = HitData()
+        # read in clean hit file
         with open(self.transfersFile,'r') as fh:
             for hit in HFP.readHit(fh):
                 self.HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
@@ -339,10 +396,6 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        
-        #print self.HD.roundedDistance[88]
-        #print self.HD.standardDeviation[88]
-
         
     def connect(self):
         """Try connect to the TrackM server"""
@@ -413,6 +466,17 @@ class View(object):
             for hit in DFP.readFile(fh):
                  self.DD.addComparison(hit[DFP._IMG_ID_1], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
         self.DD.collapse16S() # calculate no. of comparisons at each rounded 16S distance
+        
+        # read in dirty hit file
+        DHFP = DirtyHitFileParser()
+
+        with open(self.dirtyFile,'r') as fh:
+            for hit in DHFP.readHit(fh):
+                
+        
+        
+        
+        
         
         #normalise hits per 100 comparisons
         percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
