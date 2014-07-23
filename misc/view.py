@@ -436,6 +436,7 @@ class View(object):
                 zerosToAdd = fullHitList - len(hitList)
                 for i in range(zerosToAdd):
                     hitList.append(0)
+                print hitList
                 stdDev = np.array(hitList)
                 standardised.append(np.std(stdDev, dtype=np.float64))
             except KeyError:
