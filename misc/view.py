@@ -433,23 +433,15 @@ class View(object):
             try:
                 hitList   = self.HD.standardDeviation[perc] # list of hits 
                 fullHitList = self.DD.roundedComparisons[perc] # int 
-                print "*******************"
-                print str(len(hitList)),str(fullHitList)
-                print "*******************"
+                zerosToAdd = fullHitList - len(hitList)
+                for i in range(zerosToAdd):
+                    hitList.append(0)
+                stdDev = np.array(hitList)
+                standardised.append(np.std(stdDev, dtype=np.float64))
             except KeyError:
-                pass
-            
-            
-            
-            
-            
-            
-            try:
-                print perc, self.HD.calculateStD(perc)
-            except KeyError:
-                pass
-            
-            
+                standardised.append(0)
+        print standardised
+
         x,y = percList,normalisedHits
         #print x
         #print y
