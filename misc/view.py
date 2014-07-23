@@ -180,11 +180,17 @@ class DistanceData(object):
         try: 
             self.comparisons[self.idLookUp[IMG_ID_1]][self.idLookUp[IMG_ID_2]] = math.ceil(perc16S)
         except KeyError:
-            self.comparisons[self.idLookUp[IMG_ID_1]] = {self.idLookUp[IMG_ID_2] : math.ceil(perc16S)}
+            try:
+                self.comparisons[self.idLookUp[IMG_ID_1]] = {self.idLookUp[IMG_ID_2] : math.ceil(perc16S)}
+            except KeyError:
+                pass
         try:
             self.comparisons[self.idLookUp[IMG_ID_2]][self.idLookUp[IMG_ID_1]] = math.ceil(perc16S)
         except KeyError:
-            self.comparisons[self.idLookUp[IMG_ID_2]] = {self.idLookUp[IMG_ID_1] : math.ceil(perc16S)}
+            try:
+                self.comparisons[self.idLookUp[IMG_ID_2]] = {self.idLookUp[IMG_ID_1] : math.ceil(perc16S)}
+            except KeyError:
+                pass
     
     def collapse16S(self):
         """create data structure: rounded 16S perc -> no. of comparisons"""
@@ -350,8 +356,8 @@ class View(object):
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
         
-        print self.HD.roundedDistance[88]
-        print self.HD.standardDeviation[88]
+        #print self.HD.roundedDistance[88]
+        #print self.HD.standardDeviation[88]
         
     def connect(self):
         """Try connect to the TrackM server"""
