@@ -444,12 +444,9 @@ class View(object):
                 standardised.append(0)
                 
         x,y = percList,normalisedHits
-        print x
-        print y 
-        print standardised
         
         # Build plot
-        plt.scatter(x, y, marker='|', s=1000)
+        plt.scatter(x, y, marker='|', s=standardised)
         plt.plot(x,y, linestyle='-')
         plt.axis([100,75,0,100])
         plt.xlabel('16S distance (%)')
