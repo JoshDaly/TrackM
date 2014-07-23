@@ -436,7 +436,7 @@ class View(object):
         normalisedHits = []
         for perc in percList:
             try:
-                print self.HD.roundedDistance[perc]
+                print self.HD.roundedDistance[perc],str(perc)
                 x = self.DD.roundedComparisons[perc]/float(100)
                 normalised = self.HD.roundedDistance[perc] / float(x)
             except KeyError: # no hits at that percentage
