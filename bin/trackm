@@ -247,7 +247,7 @@ if __name__ == '__main__':
     view_parser.add_argument("transfersFile", help="csv file containing transfers")
     view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
     view_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
-    view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S_%")
+    view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S")
 	
     #-------------------------------------------------
     # get and check options
