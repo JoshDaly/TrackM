@@ -265,13 +265,7 @@ class HitData(object):
                 self.hits[_ID_1][_ID_2] = 1
             except KeyError:
                 self.hits[_ID_1] = {_ID_2 : 1}  
-        #try: 
-        #    self.hits[_ID_2][_ID_1] += 1
-        #except KeyError:
-        #    try:
-        #        self.hits[_ID_2][_ID_1] = 1
-        #    except KeyError:
-        #        self.hits[_ID_2] = {_ID_1 : 1}
+
             
     def getIDS(self):
         """return array of IDs"""
@@ -289,7 +283,6 @@ class HitData(object):
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
-        print self.roundedDistance
             
     def normaliseHits(self):  
         """normalise hits per 100 comparisons"""
@@ -451,7 +444,7 @@ class View(object):
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
         plt.plot(x,y, linestyle='-')
-        plt.axis([100,75,0,10])
+        plt.axis([100,75,0,max(y)+10])
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
         plt.show() # plot 
