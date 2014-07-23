@@ -133,7 +133,8 @@ def doWork(args):
             print "*******************************************************************************"
             print "                          Type : Frequency plot                                  "
             print "*******************************************************************************"
-            V.frequencyPlot()
+            V.frequencyPlot(args.lookUpFile,
+                            args.comparisonsFile)
         else:
             print "*******************************************************************************"
             print "                          Type : Network plot                                    "
@@ -245,6 +246,8 @@ if __name__ == '__main__':
     #view_parser.add_argument("port", type=int, help="Port the server is listening on")
     view_parser.add_argument("transfersFile", help="csv file containing transfers")
     view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
+    view_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
+    view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S_%")
 	
     #-------------------------------------------------
     # get and check options

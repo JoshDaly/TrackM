@@ -94,12 +94,106 @@ class HitFileParser(object):
 ###############################################################################
 
 class DistanceFileParser(object):
+    """img_16S_gut_oral_97percent.csv"""
     # constants for readability
-    
+    _IMG_ID_1     = 0
+    _IMG_ID_2     = 1
+    _IDENTITY_16S = 2
     
     def __init__(self):
-        
+        self.prepped = False
 
+    def readFile(self, # this is a generator function
+                 fh):
+        while True:
+            if not self.prepped:
+                # we still need to strip out the header
+                for l in fh:
+                    if l[0] == "I": # header line
+                        self.prepped = True
+                        break
+            # file should be prepped now
+            for l in fh:
+                fields = l.split("\t")
+                yield ([fields[0],
+                        fields[1],
+                        float(fields[2])]
+                       )
+            break # done! 
+
+        
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class IDFileParser(object):
+    """img_ids_ordered_by_genome_tree.Mar14.csv"""
+    # constants
+    _GT_ID  = 0 
+    _IMG_ID = 1 
+    
+    def __init__(self):
+        self.prepped = False
+    
+    def readFile(self, # this is a generator function
+                 fh):
+        while True:
+            if not self.prepped:
+                # we still need to strip out the header
+                for l in fh:
+                    if l[0] == "g": # header line
+                        self.prepped = True
+                        break
+            # file should be prepped now
+            for l in fh:
+                fields = l.split("\t")
+                yield ([fields[0],
+                        fields[1]])
+            break # done! 
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class DistanceData(object):
+    """class to store genome comparison data, with 16S distance"""
+    def __init__(self):
+        self.idLookUp           = {} # IMG_ID -> GT_ID
+        self.comparisons        = {}
+        self.roundedComparisons = {}
+        
+    def addIDS(self,
+               IMG_ID,
+               GT_ID
+               ):
+        """create a lookup table with IMG_ID -> GT_ID"""
+        self.idLookUp[IMG_ID] = GT_ID 
+    
+    def addComparison(self,
+                      IMG_ID_1,
+                      IMG_ID_2,
+                      perc16S):
+        """Call this function after creating the lookup table for IDs"""
+        try: 
+            self.comparisons[self.idLookUp[IMG_ID_1]][self.idLookUp[IMG_ID_2]] = math.ceil(perc16S)
+        except KeyError:
+            self.comparisons[self.idLookUp[IMG_ID_1]] = {self.idLookUp[IMG_ID_2] : math.ceil(perc16S)}
+        try:
+            self.comparisons[self.idLookUp[IMG_ID_2]][self.idLookUp[IMG_ID_1]] = math.ceil(perc16S)
+        except KeyError:
+            self.comparisons[self.idLookUp[IMG_ID_2]] = {self.idLookUp[IMG_ID_1] : math.ceil(perc16S)}
+    
+    def collapse16S(self):
+        """create data structure: rounded 16S perc -> no. of comparisons"""
+        for id_1 in self.comparisons.keys():
+            for id_2 in self.comparisons[id_1]:
+                try:
+                    self.roundedComparisons[self.comparisons[id_1][id_2]] += 1 # add one to the count of comparisons 
+                except KeyError:
+                    self.roundedComparisons[self.comparisons[id_1][id_2]] = 1
 
 ###############################################################################
 ###############################################################################
@@ -304,13 +398,33 @@ class View(object):
         plt.show() 
         
         
-    def frequencyPlot(self):
+    def frequencyPlot(self,
+                      lookUpFile,
+                      comparisonsFile):
         """Produces a line graph showing the frequency of LGT between genomes
         
            per 100 comparisons relative the ANI distance between the two genomes
         
         NEEDS TO INCORPORATE ALL COMPARISONS, NOT JUST THE ONES THAT HAD AN LGT EVENT!!!!
         """
+        # objects
+        DFP = DistanceFileParser()
+        IDFP = IDFileParser()
+        self.DD = DistanceData()
+        
+        # read in id look up file
+        with open(lookUpFile,'r') as fh:
+            for hit in IDFP.readFile(fh):
+                self.DD.addIDS(hit[IDFP._IMG_ID]], hit[IDFP._GT_ID])
+            
+        # read in comparisons file
+        with open(comparisonsFile,'r') as fh:
+            for hit in DFP.readFile(fh):
+                 self.DD.addComparison(hit[DFP._IMG_ID_1]], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
+        self.DD.collapse16S() # calculate no. of comparisons at each rounded 16S distance
+        
+        print self.DD.roundedComparisons
+        
         # group by 16S distance
         x,y = self.HD.normaliseHits()
         print x
