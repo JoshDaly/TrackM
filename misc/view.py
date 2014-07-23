@@ -289,7 +289,7 @@ class HitData(object):
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
-        print self.roundedDistance 
+                print self.distance[id_1][id_2],self.hits[id_1][id_2]
             
     def normaliseHits(self):  
         """normalise hits per 100 comparisons"""
