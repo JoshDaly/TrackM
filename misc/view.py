@@ -529,7 +529,7 @@ class View(object):
         # add error bars
         for i in range(len(x)):
             plt.plot([x[i],x[i]],[y[i]-standardised[i],y[i]+standardised[i]],'k')
-        plt.axis([100,75,0,100])
+        plt.axis([100,75,0,80])
         plt.xlabel('16S distance (%)')
         plt.ylabel('LGT per 100 comparisons')
         plt.show() # plot 
