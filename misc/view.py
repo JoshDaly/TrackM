@@ -430,12 +430,14 @@ class View(object):
                 normalised = 0 
             normalisedHits.append(normalised)
             # calculate standard deviation
-            hitList   = self.HD.standardDeviation[perc] # list of hits 
-            fullHitList = self.DD.roundedComparisons[perc] # int 
-            print "*******************"
-            print str(len(hitList)),str(fullHitList)
-            print "*******************"
-            
+            try:
+                hitList   = self.HD.standardDeviation[perc] # list of hits 
+                fullHitList = self.DD.roundedComparisons[perc] # int 
+                print "*******************"
+                print str(len(hitList)),str(fullHitList)
+                print "*******************"
+            except KeyError:
+                pass
             
             
             
