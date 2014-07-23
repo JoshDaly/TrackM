@@ -134,7 +134,8 @@ def doWork(args):
             print "                          Type : Frequency plot                                  "
             print "*******************************************************************************"
             V.frequencyPlot(args.lookUpFile,
-                            args.comparisonsFile)
+                            args.comparisonsFile,
+                            args.dirtyFile)
         else:
             print "*******************************************************************************"
             print "                          Type : Network plot                                    "
@@ -248,6 +249,7 @@ if __name__ == '__main__':
     view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
     view_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
     view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S")
+    view_parser.add_argument("-d","--dirtyFile", help="File containing dirty transfer events")
 	
     #-------------------------------------------------
     # get and check options

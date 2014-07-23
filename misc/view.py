@@ -448,7 +448,8 @@ class View(object):
         
     def frequencyPlot(self,
                       lookUpFile,
-                      comparisonsFile):
+                      comparisonsFile,
+                      dirtyFile):
         """Produces a line graph showing the frequency of LGT between genomes
         
            per 100 comparisons relative the ANI distance between the two genomes
@@ -474,7 +475,7 @@ class View(object):
         # read in dirty hit file
         DHFP = DirtyHitFileParser()
 
-        with open(self.dirtyFile,'r') as fh:
+        with open(dirtyFile,'r') as fh:
             for hit in DHFP.readHit(fh):
                 self.DD.addDirtyHit(hit[DHFP._ID_1]], hit[DHFP._ID_2]])
         self.DD.getDirty16S() # creates 16S -> hits
