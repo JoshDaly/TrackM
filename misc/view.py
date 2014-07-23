@@ -442,13 +442,11 @@ class View(object):
                 #print standardised
             except KeyError:
                 standardised.append(0)
-            print standardised
+                
         x,y = percList,normalisedHits
-        #print x
-        #print y
-        
-        
-        
+        print x
+        print y 
+        print standardised
         
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
