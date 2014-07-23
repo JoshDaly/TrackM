@@ -197,6 +197,9 @@ class DistanceData(object):
         self.idLookUp           = {} # IMG_ID -> GT_ID
         self.comparisons        = {}
         self.roundedComparisons = {}
+        self.dirtyHits          = {} # dict to store dirty hit data
+        self.dirtyLength        = {} # dict to store dirty length data
+        self.dirtyRoundedHits   = {}
         
     def addIDS(self,
                IMG_ID,
@@ -234,6 +237,31 @@ class DistanceData(object):
                 except KeyError:
                     self.roundedComparisons[self.comparisons[id_1][id_2]] = 1
 
+    def addDirtyHit(self,
+                    _ID_1,
+                    _ID_2):
+        """add an LGT instance to the dirty data store"""
+        try:
+            self.dirtyHits[_ID_1][_ID_2] +=1 
+        except KeyError:
+            try:
+                self.dirtyHits[_ID_1][_ID_2] = 1
+            except KeyError:
+                self.dirtyHits[_ID_1] = {_ID_2 : 1}
+
+    def getDirty16S(self):
+        """Get 16S percentages for dirty transfers"""    
+        for id_1 in self.dirtyHits.keys():
+            for id_2 in self.dirtyHits[id_1]:
+                try:
+                    self.dirtyRoundedHits[self.comparisons[id_1][id_2]] += self.dirtyHits[id_1][id_2]
+                except: 
+                    self.dirtyRoundedHits[self.comparisons[id_1][id_2]] = self.dirtyHits[id_1][id_2]
+                    
+                
+                        
+                        
+                        
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -248,8 +276,6 @@ class HitData(object):
         self.distance           = {} # dict to store 16S distance
         self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
         self.standardDeviation  = {} # dict to store standard deviation at each percentage
-        self.dirtyHits          = {} # dict to store dirty hit data
-        self.dirtyLength        = {} # dict to store dirty length data
     
     def addLen(self,
                _ID_1,
@@ -300,28 +326,6 @@ class HitData(object):
                 self.hits[_ID_1][_ID_2] = 1
             except KeyError:
                 self.hits[_ID_1] = {_ID_2 : 1}  
-
-    def addDirtyHit(self,
-                    _ID_1,
-                    _ID_2):
-        """add an LGT instance to the dirty data store"""
-        try:
-            self.dirtyHits[_ID_1][_ID_2] +=1 
-        except KeyError:
-            try:
-                self.dirtyHits[_ID_1][_ID_2] = 1
-            except KeyError:
-                self.dirtyHits[_ID_1] = {_ID_2 : 1}
-        # both directions
-        try:
-            self.dirtyHits[_ID_2][_ID_1] +=1 
-        except KeyError:
-            try:
-                self.dirtyHits[_ID_2][_ID_1] = 1
-            except KeyError:
-                self.dirtyHits[_ID_2] = {_ID_1 : 1}
-
-
             
     def getIDS(self):
         """return array of IDs"""
@@ -472,27 +476,31 @@ class View(object):
 
         with open(self.dirtyFile,'r') as fh:
             for hit in DHFP.readHit(fh):
-                
-        
-        
-        
-        
+                self.DD.addDirtyHit(hit[DHFP._ID_1]], hit[DHFP._ID_2]])
+        self.DD.getDirty16S() # creates 16S -> hits
         
         #normalise hits per 100 comparisons
         percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
         percList.sort()
+        normalisedDirtyHits = []
+        standardisedDirty = []
         normalisedHits = []
         standardised = []
         for perc in percList:
-            normalised = 0
+            normalise = 0
+            normaliseDirty = 0
+            # create x and y coordinates for line graph
+            c = self.DD.roundedComparisons[perc]/float(100)
             try:
-                #print str(perc),self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc]
-                x = self.DD.roundedComparisons[perc]/float(100)
-                normalised = self.HD.roundedDistance[perc] / float(x)
-            except KeyError: # no hits at that percentage
-                x = 1
-                normalised = 0 
+                normalise = self.HD.roundedDistance[perc] / float(c)
+            except KeyError:
+                normalise = 0 
             normalisedHits.append(normalised)
+            try: 
+                normaliseDirty = self.DD.dirtyRoundedHits[perc] / float(c)
+            except KeyError:
+                normaliseDirty = 0
+            normalisedDirtyHits.append(normaliseDirty)
             # calculate standard deviation
             try:
                 hitList   = self.HD.standardDeviation[perc] # list of hits 
@@ -507,15 +515,20 @@ class View(object):
             except KeyError:
                 standardised.append(0)
                 
-        x,y = percList,normalisedHits
+        x,y    = percList,normalisedHits # clean
+        xd, yd = percList,normalisedDirtyHits # dirty
         
         # Build plot
-        plt.scatter(x, y, marker='|', s=standardised)
+        # clean
+        plt.scatter(x, y, marker='|') 
         plt.plot(x,y, linestyle='-')
+        # dirty 
+        plt.scatter(xd, yd, mark='|') # dirty
+        plt.plot(xd,yd, linestyle='-')
         # add error bars
         for i in range(len(x)):
             plt.plot([x[i],x[i]],[y[i]-standardised[i],y[i]+standardised[i]],'k')
-        plt.axis([100,75,0,max(y)+10])
+        plt.axis([100,75,0,100])
         plt.xlabel('16S distance (%)')
         plt.ylabel('LGT per 100 comparisons')
         plt.show() # plot 
