@@ -430,7 +430,7 @@ class View(object):
         normalisedHits = []
         for perc in percList:
             try:
-                print str(perc),self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc]
+                #print str(perc),self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc]
                 x = self.DD.roundedComparisons[perc]/float(100)
                 normalised = self.HD.roundedDistance[perc] / float(x)
             except KeyError: # no hits at that percentage
@@ -438,8 +438,8 @@ class View(object):
                 normalised = 0 
             normalisedHits.append(normalised)
         x,y = percList,normalisedHits
-        print x
-        print y
+        #print x
+        #print y
         
         # Build plot
         plt.scatter(x, y, marker='|', s=1000)
@@ -447,7 +447,7 @@ class View(object):
         plt.axis([100,75,0,100])
         plt.xlabel('16S distance (%)')
         plt.ylabel('HGT per 100 comparisons')
-        #plt.show() # plot 
+        plt.show() # plot 
     
     
     
