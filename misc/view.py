@@ -487,19 +487,18 @@ class View(object):
         standardisedDirty = []
         normalisedHits = []
         standardised = []
+        
+        for perc in percList:
+            try: 
+                print self.DD.dirtyRoundedHits[perc],perc, self.DD.roundedComparisons[perc]
+            except KeyError:
+                print "None",perc, self.DD.roundedComparisons[perc]
+                
+        
         for perc in percList:
             normalise = 0
             normaliseDirty = 0
-            # create x and y coordinates for line graph
-            try:
-                blah, blah1 = self.HD.roundedDistance[perc], self.DD.dirtyRoundedHits[perc]
-                print perc, self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc], self.DD.dirtyRoundedHits[perc]
-            except KeyError:
-                try:
-                    print perc, self.DD.roundedComparisons[perc], 'None',self.DD.dirtyRoundedHits[perc]
-                except KeyError:
-                    print perc, self.DD.roundedComparisons[perc]
-            
+            # create x and y coordinates for line graph        
             c = self.DD.roundedComparisons[perc]/float(100)
             try:
                 normalise = self.HD.roundedDistance[perc] / float(c)
