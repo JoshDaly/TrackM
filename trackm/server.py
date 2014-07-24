@@ -332,7 +332,7 @@ class Server(object):
         result_handling_process = multiprocessing.Process(target=self._updateHits, args=(contigHeaders, result_queue)).start()
         # give the updater time to fire up
         time.sleep(1)
-
+        
         for l in listeners:
             l.start()
             time.sleep(1)       # not allowed to attack the ssh daemon
@@ -349,15 +349,23 @@ class Server(object):
             result_handling_process.join()
 
     def _updateHits(self, contigHeaders, resultQueue):
+        II = ImportInterface(self.dbFileName,verbosity=100)
+        tmp = []
         while(True):
-            # block waiting for the next item in the queue to appear
-            hits = resultQueue.get(block=True, timeout=None)
-            if hits == None:
+            current = resultQueue.get(block=True, timeout=None)
+            #print "current capacity of resultQueue %d" % int(resultQueue.qsize())
+            if current == None: 
+                print "current is None"
+                II.importHits(tmp)
                 break
-
-            # get an import interface
-            II = ImportInterface(self.dbFileName)
-            II.importHits(contigHeaders, hits)
+            else:
+                tmp.append(current)
+            
+            print "Length of tmp is %d" % len(tmp)
+             
+            if len(tmp) >= 4: # set size limit of queue
+                II.importHits(contigHeaders, tmp)
+                tmp = []
 
     def runAsDaemon(self):
         """Run in the background and serve requests for TrackM view etc"""

@@ -145,7 +145,7 @@ class ImportInterface(Interface):
 
     def importHits(self,
                    contigHeaders,   # dict of type {header -> cid}
-                   hits,            # list of hit and other information returned from TrackM worker
+                   hits,            # an array of hit lists and other information returned from TrackM worker
                    ):
         """Add the new hits to the DB
 
@@ -155,66 +155,74 @@ class ImportInterface(Interface):
         """
         self.connect()
         sqid, hid, cid, oid = self.getHighestIds()
-        pid = hits[0]
-        ani_comp = hits[1]
         to_db = []
         new_contigs = []
         new_seqs = []
-        for i in range(3, len(hits)):
-            # for each new hit
-
-            # work out if we'e seen the contigs before or make a new entry
-            try:
-                cid1 = contigHeaders[hits[i].contig1]
-            except KeyError:
-                # new contig!
-                cid += 1
-                cid1 = cid
-                contigHeaders[hits[i].contig1] = cid1
-                new_contigs.append((cid, "%s" % hits[i].contig1))
-
-            try:
-                cid2 = contigHeaders[hits[i].contig2]
-            except KeyError:
-                # new contig!
-                cid += 1
-                cid2 = cid
-                contigHeaders[hits[i].contig2] = cid2
-                new_contigs.append((cid, "%s" % hits[i].contig2))
-
-            # we know the seqs are new
-            sqid += 1
-            sqid1 = sqid
-            new_seqs.append((sqid1, hits[i].seq1))
-            sqid += 1
-            sqid2 = sqid
-            new_seqs.append((sqid2, hits[i].seq2))
-
-            # new hid and add!
-            hid += 1
-
-            # make a tuple for the add
-            to_db.append(tuple([hid,
-                                pid,
-                                cid1,
-                                hits[i].start1,
-                                hits[i].len1,
-                                hits[i].strand1,
-                                sqid1,
-                                cid2,
-                                hits[i].start2,
-                                hits[i].len2,
-                                hits[i].strand2,
-                                sqid2,
-                                hits[i].identity]
-                               )
-                         )
-
+        pids_anis = []
+        
+        for hit in hits:
+            print hit
+            if hit == None:
+                pass
+            else:
+                pid =      hit[0] # array of pids
+                ani_comp = hit[1] # array of anis
+                pids_anis.append([pid,ani_comp])
+                for i in range(3, len(hit)):
+                    # for each new hit
+                    # work out if we'e seen the contigs before or make a new entry
+                    try:
+                        cid1 = contigHeaders[hit[i].contig1]
+                    except KeyError:
+                        # new contig!
+                        cid += 1
+                        cid1 = cid
+                        contigHeaders[hit[i].contig1] = cid1
+                        new_contigs.append((cid, "%s" % hit[i].contig1))
+        
+                    try:
+                        cid2 = contigHeaders[hit[i].contig2]
+                    except KeyError:
+                        # new contig!
+                        cid += 1
+                        cid2 = cid
+                        contigHeaders[hit[i].contig2] = cid2
+                        new_contigs.append((cid, "%s" % hit[i].contig2))
+        
+                    # we know the seqs are new
+                    sqid += 1
+                    sqid1 = sqid
+                    new_seqs.append((sqid1, hit[i].seq1))
+                    sqid += 1
+                    sqid2 = sqid
+                    new_seqs.append((sqid2, hit[i].seq2))
+        
+                    # new hid and add!
+                    hid += 1
+        
+                    # make a tuple for the add
+                    to_db.append(tuple([hid,
+                                        pid,
+                                        cid1,
+                                        hit[i].start1,
+                                        hit[i].len1,
+                                        hit[i].strand1,
+                                        sqid1,
+                                        cid2,
+                                        hit[i].start2,
+                                        hit[i].len2,
+                                        hit[i].strand2,
+                                        sqid2,
+                                        hit[i].identity]
+                                       )
+                                 )
+    
         # insert the hits
         self.insert("hits", ["hid", "pid", "cid_1", "start_1", "len_1", "strand_1", "sqid_1", "cid_2", "start_2", "len_2", "strand_2", "sqid_2", "ident"], to_db)
 
         # insert the ani_comp into the pairs table to say that this pair has been processed
-        self.updateSingle("pairs", ["ani_comp"], ["%0.2f"% ani_comp], condition="pid='%d'"%pid)
+                            
+        self.updatePairsBulk(pids_anis)
 
         # insert the new contigs
         self.insert('contigs', ["cid", "header"], new_contigs)
@@ -259,6 +267,26 @@ class ImportInterface(Interface):
             self.disconnect()
 
         return ids[0]
+
+    def updatePairsBulk(self,pids_anis):
+        """Update a single value in the DB
+
+        table: is a single string. EX: 'bob'
+        cols: is an ordered list of column names in the table ['col1', 'col2', ... ]is a list of columns to insert into
+        vals is a list of tuples of values to insert
+
+        the ordering of cols and vals should make sense
+
+        condition: is a string which states the SQL condition. i.e. the part that comes after the where:
+
+            "type='big' or color='red'"
+
+        Note: the use of single quotes on the values. This is important.
+        """
+        cur = self.db.getCursor()
+        sql=('UPDATE pairs SET ani_comp=? WHERE pid = ?')
+        cur.executemany(sql, pids_anis)
+        self.db.commit()
 
 
 ###############################################################################
