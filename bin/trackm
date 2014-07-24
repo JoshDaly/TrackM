@@ -46,7 +46,7 @@ import sys
 from trackm.worker import Worker
 from trackm.server import Server
 #from trackm.view import View
-#from misc.view import View
+from misc.view import View
 from trackm.exceptions import *
 
 ###############################################################################
