@@ -491,6 +491,8 @@ class View(object):
             normalise = 0
             normaliseDirty = 0
             # create x and y coordinates for line graph
+            print self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc], self.DD.dirtyRoundedHits[perc]
+            
             c = self.DD.roundedComparisons[perc]/float(100)
             try:
                 normalise = self.HD.roundedDistance[perc] / float(c)
@@ -518,6 +520,10 @@ class View(object):
                 
         x,y    = percList,normalisedHits # clean
         xd, yd = percList,normalisedDirtyHits # dirty
+        
+        # print out data
+        
+        
         
         # Build plot
         # clean
