@@ -492,9 +492,9 @@ class View(object):
             normaliseDirty = 0
             # create x and y coordinates for line graph
             try:
-                print self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc], self.DD.dirtyRoundedHits[perc]
+                print perc, self.DD.roundedComparisons[perc], self.HD.roundedDistance[perc], self.DD.dirtyRoundedHits[perc]
             except KeyError:
-                print self.DD.roundedComparisons[perc]
+                print perc, self.DD.roundedComparisons[perc]
             
             c = self.DD.roundedComparisons[perc]/float(100)
             try:
