@@ -87,6 +87,39 @@ class HitFileParser(object):
                         float(fields[-1])]
                        )
             break # done! 
+        
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class DirtyHitFileParser(object):
+    """class for parsing hit data files"""
+    # constants for readability 
+    _ID_1    = 0
+    _LGT_LEN = 1
+    _ID_2    = 2
+    
+    def __init__(self):
+        self.prepped = False
+    
+    def readHit(self, # this is a generator function
+                fh 
+                ):
+        while True:
+            if not self.prepped:
+                # we still need to strip out the header
+                for l in fh:
+                    if l[0] == "i": # header line
+                        self.prepped = True
+                        break
+            # file should be prepped now
+            for l in fh:
+                fields = l.split("\t")
+                yield ([fields[1],
+                        fields[6],
+                        fields[8]])
+            break # done!
 
 ###############################################################################
 ###############################################################################
@@ -164,6 +197,9 @@ class DistanceData(object):
         self.idLookUp           = {} # IMG_ID -> GT_ID
         self.comparisons        = {}
         self.roundedComparisons = {}
+        self.dirtyHits          = {} # dict to store dirty hit data
+        self.dirtyLength        = {} # dict to store dirty length data
+        self.dirtyRoundedHits   = {}
         
     def addIDS(self,
                IMG_ID,
@@ -180,11 +216,17 @@ class DistanceData(object):
         try: 
             self.comparisons[self.idLookUp[IMG_ID_1]][self.idLookUp[IMG_ID_2]] = math.ceil(perc16S)
         except KeyError:
-            self.comparisons[self.idLookUp[IMG_ID_1]] = {self.idLookUp[IMG_ID_2] : math.ceil(perc16S)}
+            try:
+                self.comparisons[self.idLookUp[IMG_ID_1]] = {self.idLookUp[IMG_ID_2] : math.ceil(perc16S)}
+            except KeyError:
+                pass
         try:
             self.comparisons[self.idLookUp[IMG_ID_2]][self.idLookUp[IMG_ID_1]] = math.ceil(perc16S)
         except KeyError:
-            self.comparisons[self.idLookUp[IMG_ID_2]] = {self.idLookUp[IMG_ID_1] : math.ceil(perc16S)}
+            try:
+                self.comparisons[self.idLookUp[IMG_ID_2]] = {self.idLookUp[IMG_ID_1] : math.ceil(perc16S)}
+            except KeyError:
+                pass
     
     def collapse16S(self):
         """create data structure: rounded 16S perc -> no. of comparisons"""
@@ -195,6 +237,31 @@ class DistanceData(object):
                 except KeyError:
                     self.roundedComparisons[self.comparisons[id_1][id_2]] = 1
 
+    def addDirtyHit(self,
+                    _ID_1,
+                    _ID_2):
+        """add an LGT instance to the dirty data store"""
+        try:
+            self.dirtyHits[_ID_1][_ID_2] +=1 
+        except KeyError:
+            try:
+                self.dirtyHits[_ID_1][_ID_2] = 1
+            except KeyError:
+                self.dirtyHits[_ID_1] = {_ID_2 : 1}
+
+    def getDirty16S(self):
+        """Get 16S percentages for dirty transfers"""    
+        for id_1 in self.dirtyHits.keys():
+            for id_2 in self.dirtyHits[id_1]:
+                try:
+                    self.dirtyRoundedHits[self.comparisons[id_1][id_2]] += self.dirtyHits[id_1][id_2]
+                except: 
+                    self.dirtyRoundedHits[self.comparisons[id_1][id_2]] = self.dirtyHits[id_1][id_2]
+                    
+                
+                        
+                        
+                        
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -259,13 +326,6 @@ class HitData(object):
                 self.hits[_ID_1][_ID_2] = 1
             except KeyError:
                 self.hits[_ID_1] = {_ID_2 : 1}  
-        try: 
-            self.hits[_ID_2][_ID_1] += 1
-        except KeyError:
-            try:
-                self.hits[_ID_2][_ID_1] = 1
-            except KeyError:
-                self.hits[_ID_2] = {_ID_1 : 1}
             
     def getIDS(self):
         """return array of IDs"""
@@ -283,22 +343,12 @@ class HitData(object):
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
-      
-    def normaliseHits(self):  
-        """normalise hits per 100 comparisons"""
-        percList = self.standardDeviation.keys()
-        percList.sort()
-        normalisedHits = []
-        for perc in percList:
-            x = len(self.standardDeviation[perc])/float(100)
-            normalised = self.roundedDistance[perc] / float(x)
-            normalisedHits.append(normalised)
-        return percList,normalisedHits
                   
     def calculateStD(self,perc):
         """return the standard deviation for each percentage"""
         hitList = []
         hitList = self.standardDeviation[perc]
+        print perc,hitList
         stdev = np.array(hitList)
         #print  str(np.std(stdev, dtype=np.float64))
         return  np.std(stdev, dtype=np.float64) 
@@ -342,6 +392,7 @@ class View(object):
         """read data from csv file, and capture as object"""
         HFP = HitFileParser()
         self.HD = HitData()
+        # read in clean hit file
         with open(self.transfersFile,'r') as fh:
             for hit in HFP.readHit(fh):
                 self.HD.add16SDist(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._PERC_ID])
@@ -349,9 +400,6 @@ class View(object):
                 self.HD.addLen(hit[HFP._ID_1], hit[HFP._ID_2], hit[HFP._LGT_LEN])
         self.workingIDs = self.HD.getIDS() # working ids list   
         self.HD.groupBy16S() # create dictionary of rounded 16S distance scores
-        
-        print self.HD.roundedDistance[88]
-        print self.HD.standardDeviation[88]
         
     def connect(self):
         """Try connect to the TrackM server"""
@@ -400,7 +448,8 @@ class View(object):
         
     def frequencyPlot(self,
                       lookUpFile,
-                      comparisonsFile):
+                      comparisonsFile,
+                      dirtyFile):
         """Produces a line graph showing the frequency of LGT between genomes
         
            per 100 comparisons relative the ANI distance between the two genomes
@@ -420,29 +469,70 @@ class View(object):
         # read in comparisons file
         with open(comparisonsFile,'r') as fh:
             for hit in DFP.readFile(fh):
-                 self.DD.addComparison(hit[DFP._IMG_ID_1]], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
+                 self.DD.addComparison(hit[DFP._IMG_ID_1], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
         self.DD.collapse16S() # calculate no. of comparisons at each rounded 16S distance
         
-        print self.DD.roundedComparisons
+        # read in dirty hit file
+        DHFP = DirtyHitFileParser()
+
+        with open(dirtyFile,'r') as fh:
+            for hit in DHFP.readHit(fh):
+                self.DD.addDirtyHit(hit[DHFP._ID_1], hit[DHFP._ID_2])
+        self.DD.getDirty16S() # creates 16S -> hits
         
-        # group by 16S distance
-        x,y = self.HD.normaliseHits()
-        print x
-        print y
+        #normalise hits per 100 comparisons
+        percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
+        percList.sort()
+        normalisedDirtyHits = []
+        standardisedDirty = []
+        normalisedHits = []
+        standardised = []
+        for perc in percList:
+            normalise = 0
+            normaliseDirty = 0
+            # create x and y coordinates for line graph
+            c = self.DD.roundedComparisons[perc]/float(100)
+            try:
+                normalise = self.HD.roundedDistance[perc] / float(c)
+            except KeyError:
+                normalise = 0 
+            normalisedHits.append(normalise)
+            try: 
+                normaliseDirty = self.DD.dirtyRoundedHits[perc] / float(c)
+            except KeyError:
+                normaliseDirty = 0
+            normalisedDirtyHits.append(normaliseDirty)
+            # calculate standard deviation
+            try:
+                hitList   = self.HD.standardDeviation[perc] # list of hits 
+                fullHitList = self.DD.roundedComparisons[perc] # int 
+                zerosToAdd = fullHitList - len(hitList)
+                for i in range(zerosToAdd):
+                    hitList.append(0)
+                #print hitList
+                stdDev = np.array(hitList)
+                standardised.append(np.std(stdDev, dtype=np.float64))
+                #print standardised
+            except KeyError:
+                standardised.append(0)
+                
+        x,y    = percList,normalisedHits # clean
+        xd, yd = percList,normalisedDirtyHits # dirty
         
         # Build plot
-        plt.scatter(x, y, marker='|', s=1000)
+        # clean
+        plt.scatter(x, y, marker='|') 
         plt.plot(x,y, linestyle='-')
-        plt.axis([100,75,0,10])
+        # dirty 
+        plt.scatter(xd, yd, marker='|') # dirty
+        plt.plot(xd,yd, linestyle='-')
+        # add error bars
+        for i in range(len(x)):
+            plt.plot([x[i],x[i]],[y[i]-standardised[i],y[i]+standardised[i]],'k')
+        plt.axis([100,75,0,80])
         plt.xlabel('16S distance (%)')
-        plt.ylabel('HGT per 100 comparisons')
+        plt.ylabel('LGT per 100 comparisons')
         plt.show() # plot 
-        
-
-    
-    
-    
-    
     
     
     
