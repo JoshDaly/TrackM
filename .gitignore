@@ -1,2 +1,5 @@
 build
 dist
+misc/*pyc
+trackm/*pyc
+lib
