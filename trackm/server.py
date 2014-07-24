@@ -152,7 +152,9 @@ class ProcessListener(object):
         # set up the socket
         while True:
             # get the next task
+            print "about to get task"
             task = self.taskQueue.get(block=True, timeout=None)
+            print "got task: %d" % task.id
             if task == None:
                 # poison pill
                 break
@@ -166,7 +168,7 @@ class ProcessListener(object):
                     socket.bind("tcp://*:%s" % self.port)
                     socket_OK  = True
                 except zmq.ZMQError:
-                    #print sys.exc_info()[0]
+                    print sys.exc_info()[0], "Job: %d" % task.id
                     time.sleep(1)
 
             # set the worker going
@@ -180,38 +182,45 @@ class ProcessListener(object):
                                                                      task.ani,
                                                                      "tcp://%s:%d" % (self.ip, self.port)
                                                                      )
-            self.queueManager.lodgeJob(ret_str, sge_script_fn)
+            exit_status = self.queueManager.lodgeJob(ret_str, sge_script_fn)
 
-            # TODO: send the deets of this job off to an external management thread which
-            # monitors the queue to make sure the job isn't just dropped. If it is then is can send
-            # a "DIE" signal to this listener
+            if exit_status == 0:
 
-            # wait for result from worker and decode (blocking)
-            result = jp.decode(socket.recv().decode("zlib"))
+                # TO DO: send the deets of this job off to an external management thread which
+                # monitors the queue to make sure the job isn't just dropped. If it is then is can send
+                # a "DIE" signal to this listener
 
-            # check to see we've not been told to die
-            if result == "DIE":
-                # we abandon the worker and simply exit
-                return
+                # wait for result from worker and decode (blocking)
+                print "waiting for worker: %d" % task.id
+                result = jp.decode(socket.recv().decode("zlib"))
 
-            # check to see that there was no issue running the worker
-            # basically, check to see that the last item in the result array is
-            # actually a hit
-            if len(result) > 3:
-                # there is something on the end of this array
-                if result[-2] == "ERROR":
-                    # something went wrong. Print it out!
-                    # TODO use logging module
-                    print self.id, self.gPath1, self.gPath2
-                    print result[-1]
+                # check to see we've not been told to die
+                if result == "DIE":
+                    # we abandon the worker and simply exit
+                    return
 
-            result[1] = float(result[1])/1000.
+                # check to see that there was no issue running the worker
+                # basically, check to see that the last item in the result array is
+                # actually a hit
+                if len(result) > 3:
+                    # there is something on the end of this array
+                    if result[-2] == "ERROR":
+                        # something went wrong. Print it out!
+                        # TODO use logging module
+                        print self.id, self.gPath1, self.gPath2
+                        print result[-1]
 
-            # place the result on the result queue
-            self.resultQueue.put(result)
+                result[1] = float(result[1])/1000.
 
-            # tell the worker to exit
-            socket.send("DIE")
+                # place the result on the result queue
+                self.resultQueue.put(result)
+                print "%d The length of result queue is %d" % (task.id,int(self.resultQueue.qsize())) 
+                # tell the worker to exit
+                socket.send("DIE")
+            else:
+                print "EXIT STATUS == %d : %d" % (exit_status, task.id)
+                time.sleep(8)
+                print "No time for sleeping: %d" % task.id
 
 ###############################################################################
 ###############################################################################
