@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='TrackM',
-    version='0.1.1',
+    version='0.2.0',
     author='Josh Daly, Michael Imelfort',
     author_email='joshua.daly@uqconnect.edu.au',
     packages=['trackm','misc'],
@@ -13,7 +13,7 @@ setup(
     long_description=open('README.md').read(),
     install_requires=[
         "jsonpickle >= 0.7.1",
-        "DancingPeasant >= 0.1.0"
+        "DancingPeasant >= 0.1.3"
         "pyzmq >= 14.3.1"
     ],
 )

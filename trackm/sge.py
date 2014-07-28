@@ -28,7 +28,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly", "Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -115,7 +115,7 @@ class SGE(object):
         """lodge an SGE job on the queue"""
         with open(scriptPath, 'w') as fh:
             fh.write(sgeStr)
-        cmd_string = 'ssh -f %s "qsub -q lowmem@rudd.ace.uq.edu.au %s"' % (self.queueURL, scriptPath)
+        cmd_string = 'ssh -f %s "qsub -q lowmem %s"' % (self.queueURL, scriptPath)
         return os.system(cmd_string)
 
 ###############################################################################

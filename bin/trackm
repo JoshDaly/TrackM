@@ -28,7 +28,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly", "Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -88,7 +88,8 @@ def doWork(args):
                        args.portRange,
                        args.sgeBaseDir,
                        args.workingDir,
-                       batches=bs)
+                       batches=bs,
+                       hitCache=args.hitCache)
 
         elif args.serv_parser_name == "progress":
             # get processing status
@@ -116,7 +117,7 @@ def doWork(args):
                    args.ani,
                    args.url)
         W.compareGenomes(args.minLength, args.minIdentity)
-	
+
     elif(args.subparser_name == 'view'):
         # set up a TrackM view instance
         V = View(args.transfersFile)
@@ -126,7 +127,7 @@ def doWork(args):
         V.readFile()
         if args.chartType == "Scatter":
             print "*******************************************************************************"
-            print "                          Type :  Scatter plot                                    " 
+            print "                          Type :  Scatter plot                                    "
             print "*******************************************************************************"
             V.scatterPlot()
         elif args.chartType == "Frequency":
@@ -141,8 +142,8 @@ def doWork(args):
             print "                          Type : Network plot                                    "
             print "*******************************************************************************"
             V.networkPlot()
-        
-		
+
+
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
 
@@ -201,6 +202,7 @@ if __name__ == '__main__':
     hit_parser.add_argument("sgeBaseDir", help="Path to location for storing SGE scripts and tmp files")
     hit_parser.add_argument("-w", "--workingDir", help="Path to location for storing tmp files", default="/tmp")
     hit_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular pair batches [-1 for all batches]")
+    hit_parser.add_argument("--hitCache", type=int, default=1000, help="Hits to accumulate before writing to the DB")
     hit_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port used for getting progress etc")
 
     progress_parser = serv_subparsers.add_parser('progress',
@@ -250,7 +252,7 @@ if __name__ == '__main__':
     view_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
     view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S")
     view_parser.add_argument("-d","--dirtyFile", help="File containing dirty transfer events")
-	
+
     #-------------------------------------------------
     # get and check options
     args = None
