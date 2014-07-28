@@ -232,7 +232,7 @@ class ImportInterface(Interface):
         self.insert('seqs', ["sqid", "seq"], new_seqs)
 
         # update Id counts
-        self.update('ids', ['sqid', 'hid', 'cid', 'oid'], tuple([sqid, hid, cid, oid]), "1")
+        self.update('ids', ['sqid', 'hid', 'cid', 'oid'], (sqid, hid, cid, oid), "1")
 
         self.disconnect()
 
