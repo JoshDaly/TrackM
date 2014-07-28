@@ -44,6 +44,7 @@ import numpy as np
 
 # local includes
 from dancingPeasant.interface import Interface
+from dancingPeasant.interface import Condition
 from trackm.db import TrackMDB
 
 ###############################################################################
@@ -69,10 +70,10 @@ class ViewInterface(Interface):
         """
         self.connect()
         # get all the outstanding pairs
-        if batch is None:
-            all_pairs = self.select('pairs', ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"], "ani_comp = '-1'")
-        else:
-            all_pairs = self.select('pairs', ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"], "ani_comp = '-1' and batch = '%s'" % batch)
+        C = Condition("ani_comp", "=", "'-1'")
+        if batch is not None:
+            C = Condition(C, "and", Condition("batch", "=", "%s"%batch))
+        all_pairs = self.select('pairs', ["pid", "gid_1", "gid_2", "ani_1", "ani_2", "batch"], C)
         gids = self.select('paths', ['gid', 'path'])
         self.disconnect()
         gids = dict(gids)
