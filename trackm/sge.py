@@ -97,7 +97,7 @@ class SGE(object):
         ret_str += "#$ -e %s\n" % sge_err_fn
         ret_str += "mkdir -p %s\n" % local_tmp_working_dir
         ret_str += "cd %s\n" % local_tmp_working_dir
-        ret_str += "module load trackm/josh\n"
+        ret_str += "module load trackm\n"
         ret_str += "module load mummer\n"
         ret_str += "trackm worker %d %s %s %s %s %0.3f %s\n" % (jobId, gPath1, gid1, gPath2, gid2, ani, url)
 
@@ -115,7 +115,7 @@ class SGE(object):
         """lodge an SGE job on the queue"""
         with open(scriptPath, 'w') as fh:
             fh.write(sgeStr)
-        cmd_string = 'ssh -f %s "qsub -q lowmem %s"' % (self.queueURL, scriptPath)
+        cmd_string = 'ssh -f %s "qsub -q lowmem@rudd.ace.uq.edu.au %s"' % (self.queueURL, scriptPath)
         return os.system(cmd_string)
 
 ###############################################################################
