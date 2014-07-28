@@ -128,9 +128,7 @@ class ImportInterface(Interface):
 
         if len(existing_pairs) > 0:
             for pair in existing_pairs:
-                print pair
                 gid_pairs["%s|%s" % (pair[0], pair[1])] = True
-            print gid_pairs
             for row in to_db_b:
                 this_pair = "%s|%s" % (row[1], row[2])
                 if this_pair not in gid_pairs:
@@ -162,13 +160,12 @@ class ImportInterface(Interface):
         pids_anis = []
 
         for hit in hits:
-            print hit
             if hit == None:
                 pass
             else:
                 pid =      hit[0] # array of pids
                 ani_comp = hit[1] # array of anis
-                pids_anis.append([pid,ani_comp])
+                pids_anis.append([ani_comp,pid])
                 for i in range(3, len(hit)):
                     # for each new hit
                     # work out if we'e seen the contigs before or make a new entry
@@ -232,7 +229,7 @@ class ImportInterface(Interface):
         self.insert('seqs', ["sqid", "seq"], new_seqs)
 
         # update Id counts
-        self.update('ids', ['sqid', 'hid', 'cid', 'oid'], tuple([sqid, hid, cid, oid]), "1")
+        self.update('ids', ['sqid', 'hid', 'cid', 'oid'], [(sqid, hid, cid, oid)], 1)
 
         self.disconnect()
 

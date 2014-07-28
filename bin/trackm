@@ -88,7 +88,8 @@ def doWork(args):
                        args.portRange,
                        args.sgeBaseDir,
                        args.workingDir,
-                       batches=bs)
+                       batches=bs,
+                       hitCache=args.hitCache)
 
         elif args.serv_parser_name == "progress":
             # get processing status
@@ -201,6 +202,7 @@ if __name__ == '__main__':
     hit_parser.add_argument("sgeBaseDir", help="Path to location for storing SGE scripts and tmp files")
     hit_parser.add_argument("-w", "--workingDir", help="Path to location for storing tmp files", default="/tmp")
     hit_parser.add_argument("-b", "--batches", type=int, nargs='+', default=None, help="Process only particular pair batches [-1 for all batches]")
+    hit_parser.add_argument("--hitCache", type=int, default=1000, help="Hits to accumulate before writing to the DB")
     hit_parser.add_argument("-c", "--commsPort", type=int, default=55000,  help="Port used for getting progress etc")
 
     progress_parser = serv_subparsers.add_parser('progress',

@@ -106,7 +106,7 @@ class SGE(object):
         ret_str += "rm -rf %s\n" % local_tmp_working_dir
         ret_str += "rm %s\n" % sge_out_fn
         ret_str += "rm %s\n" % sge_err_fn
-        ret_str += "rm %s\n" % sge_script_fn
+        ret_str += "#rm %s\n" % sge_script_fn
         return (ret_str, sge_script_fn)
 
     def lodgeJob(self,
@@ -115,7 +115,7 @@ class SGE(object):
         """lodge an SGE job on the queue"""
         with open(scriptPath, 'w') as fh:
             fh.write(sgeStr)
-        cmd_string = 'ssh -f %s "qsub -q lowmem@rudd.ace.uq.edu.au %s"' % (self.queueURL, scriptPath)
+        cmd_string = 'ssh -f %s "qsub -q lowmem %s"' % (self.queueURL, scriptPath)
         return os.system(cmd_string)
 
 ###############################################################################
