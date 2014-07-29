@@ -255,8 +255,10 @@ class DistanceData(object):
             for id_2 in self.dirtyHits[id_1]:
                 try:
                     self.dirtyRoundedHits[self.comparisons[id_1][id_2]] += self.dirtyHits[id_1][id_2]
+                    #self.dirtyRoundedHits[self.comparisons[id_1][id_2]] += 1
                 except: 
                     self.dirtyRoundedHits[self.comparisons[id_1][id_2]] = self.dirtyHits[id_1][id_2]
+                    #self.dirtyRoundedHits[self.comparisons[id_1][id_2]] = 1
                     
                 
                         
@@ -338,10 +340,12 @@ class HitData(object):
                 try:
                     #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] += 1     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
                 except KeyError:
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
                     self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] = 1     # total hits per percentage
                     self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
                   
     def calculateStD(self,perc):
@@ -487,17 +491,14 @@ class View(object):
         standardisedDirty = []
         normalisedHits = []
         standardised = []
-        
-        for perc in percList:
-            try: 
-                print self.DD.dirtyRoundedHits[perc],perc, self.DD.roundedComparisons[perc]
-            except KeyError:
-                print "None",perc, self.DD.roundedComparisons[perc]
-                
-        
+        comparisons = []
+            
         for perc in percList:
             normalise = 0
             normaliseDirty = 0
+            # array of comparisons
+            comparisons.append(self.DD.roundedComparisons[perc]/float(100))   
+            
             # create x and y coordinates for line graph        
             c = self.DD.roundedComparisons[perc]/float(100)
             try:
@@ -523,15 +524,21 @@ class View(object):
                 #print standardised
             except KeyError:
                 standardised.append(0)
-                
+        
         x,y    = percList,normalisedHits # clean
         xd, yd = percList,normalisedDirtyHits # dirty
-        
+        xc, yc = percList,comparisons
         # print out data
+        for i in range(len(percList)):
+            print percList[i],comparisons[i],normalisedHits[i]
+        
         
         
         
         # Build plot
+        # comparisons
+        plt.plot(xc,yc,c='#FFFFFF')
+        plt.fill_between(xc, yc, 1e-6, facecolor = '#C0C0C0')
         # clean
         plt.scatter(x, y, marker='|') 
         plt.plot(x,y, linestyle='-')
