@@ -166,9 +166,9 @@ class ContigManager(object):
 
         NOTE: end > start ALWAYS!
         """
-        print "_".join([prefix, contigName])
-        print self.contigs[prefix][contigName][start-1:end]
-        print self.revComp(self.contigs[prefix][contigName][start-1:end])
+        #print "_".join([prefix, contigName])
+        #print self.contigs[prefix][contigName][start-1:end]
+        #print self.revComp(self.contigs[prefix][contigName][start-1:end])
 
         if strand == 0:     # take care of strandiness
             return ("_".join([prefix, contigName]), self.contigs[prefix][contigName][start-1:end])
@@ -303,21 +303,24 @@ class Worker(object):
                         # forward strand
                         strand1 = 0
                         start1 = hit[NP._START_1]
+                        end1 = hit[NP._END_1]
                     else:
                         strand1 = 1
                         start1 = hit[NP._END_1]
-
+                        end1 = hit[NP._START_1]
                     if hit[NP._END_2] > hit[NP._START_2]:
                         # forward strand
                         strand2 = 0
                         start2 = hit[NP._START_2]
+                        end2 = hit[NP._END_2]
                     else:
                         strand2 = 1
                         start2 = hit[NP._END_2]
+                        end2 = hit[NP._START_2]
 
                     # Get the seqs!
-                    (cid1, seq1) = CM.getSequence(hit[NP._ID_1], self.gid1, start1, hit[NP._END_1], strand1)
-                    (cid2, seq2) = CM.getSequence(hit[NP._ID_2], self.gid2, start2, hit[NP._END_2], strand2)
+                    (cid1, seq1) = CM.getSequence(hit[NP._ID_1], self.gid1, start1, end1, strand1)
+                    (cid2, seq2) = CM.getSequence(hit[NP._ID_2], self.gid2, start2, end2, strand2)
 
                     # make the Hit and put it on the list
                     H = Hit(cid1,

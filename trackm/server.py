@@ -32,7 +32,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly"]
 __license__ = "GPLv3"
-__version__ = "0.1.0"
+__version__ = "0.2.1"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -47,6 +47,7 @@ import multiprocessing
 import zmq
 import json
 import time
+import datetime
 import random
 import jsonpickle as jp
 import zlib
@@ -137,6 +138,8 @@ class ProcessListener(object):
                  queueManager,   # SGE queue to place jobs on
                  sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
+                 resQLowerLimit, # halt adding new jobs to the queue till the result queu reaches this size
+                 resQUpperLimit  # when the result queue reaches this size
                  ):
         # set up the listener
         self.ip = ip
@@ -146,19 +149,29 @@ class ProcessListener(object):
         self.queueManager = queueManager
         self.sgeBaseDir = sgeBaseDir
         self.workingDir = workingDir
+        self.resQUpperLimit = resQUpperLimit
+        self.resQLowerLimit = resQLowerLimit
 
     def start(self):
         """start the listener"""
         # set up the socket
         while True:
             # get the next task
-            print "about to get task"
+            #print ">> DBG about to get task"
+
+            # don't let the result queue get too big!
+            if int(self.resultQueue.qsize()) > self.resQUpperLimit:
+                while int(self.resultQueue.qsize()) > self.resQLowerLimit:
+                    time.sleep(10)
+
             task = self.taskQueue.get(block=True, timeout=None)
-            print "got task: %d" % task.id
             if task == None:
                 # poison pill
+                #print ">> DBG Last task"
                 break
 
+            #print ">> DBG got task: %d" % task.id
+            
             # configure zmq to listen for the result
             socket_OK = False
             context = zmq.Context()
@@ -168,7 +181,7 @@ class ProcessListener(object):
                     socket.bind("tcp://*:%s" % self.port)
                     socket_OK  = True
                 except zmq.ZMQError:
-                    print sys.exc_info()[0], "Job: %d" % task.id
+                    #print sys.exc_info()[0], "Job: %d" % task.id
                     time.sleep(1)
 
             # set the worker going
@@ -191,7 +204,7 @@ class ProcessListener(object):
                 # a "DIE" signal to this listener
 
                 # wait for result from worker and decode (blocking)
-                print "waiting for worker: %d" % task.id
+                #print ">> DBG waiting for worker: %d" % task.id
                 result = jp.decode(socket.recv().decode("zlib"))
 
                 # check to see we've not been told to die
@@ -214,13 +227,13 @@ class ProcessListener(object):
 
                 # place the result on the result queue
                 self.resultQueue.put(result)
-                print "%d The length of result queue is %d" % (task.id,int(self.resultQueue.qsize())) 
+                #print ">> DBG %d The length of result queue is %d" % (task.id,int(self.resultQueue.qsize())) 
                 # tell the worker to exit
                 socket.send("DIE")
             else:
-                print "EXIT STATUS == %d : %d" % (exit_status, task.id)
+                print " OH NO! EXIT STATUS == %d : %d" % (exit_status, task.id)
                 time.sleep(8)
-                print "No time for sleeping: %d" % task.id
+                #print ">> DBG No time for sleeping: %d" % task.id
 
 ###############################################################################
 ###############################################################################
@@ -230,14 +243,13 @@ class ProcessListener(object):
 class Server(object):
     def __init__(self,
                  dbFileName,        # path to db file to work with
-                 port = None,       # port to listen on, None if not required
+                 port=None,         # port to listen on, None if not required
                  ):
         self.port = port
         self.dbFileName = dbFileName
         self.highestHitId = -1
         self.queueManager = None
         self.ip = self.getIpAddress()
-
         #self.DBL = DbLogger(self.dbFileName)
 
     def getIpAddress(self):
@@ -269,9 +281,11 @@ class Server(object):
                  portRange,      # the total number of concurrent pairs we can handle
                  sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
-                 batches=[]      # the order to do pairs in
+                 batches=[],     # the order to do pairs in
+                 hitCache=1000   # number of hits to cache before writing to database
                  ):
         """process any specified outstanding pairs"""
+        print ">> DBG " + datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         print "Processing outstanding pairs"
 
         # set tmp dirs
@@ -288,14 +302,14 @@ class Server(object):
                 pairs = VI.getOutstandingPairs(batch=batch)
                 if len(pairs) > 0:
                     contig_headers = VI.getContigHeaders()
-                    self.processOutstandingPairs(pairs, portRange, contig_headers, batch=batch)
+                    self.processOutstandingPairs(pairs, portRange, contig_headers, hitCache, batch=batch)
         else:
             pairs = VI.getOutstandingPairs()
             if len(pairs) > 0:
                 contig_headers = VI.getContigHeaders()
-                self.processOutstandingPairs(pairs, portRange, contig_headers)
+                self.processOutstandingPairs(pairs, portRange, contig_headers, hitCache)
 
-    def processOutstandingPairs(self, pairs, portRange, contigHeaders, batch=None):
+    def processOutstandingPairs(self, pairs, portRange, contigHeaders, hitCache, batch=None):
         """Set up a worker to process pairs"""
         port_range = [int(i) for i in portRange.split(":")]
         port_range = range(port_range[0], port_range[1]+1)
@@ -324,12 +338,14 @@ class Server(object):
                                 result_queue,
                                 self.queueManager,
                                 self.sgeBaseDir,
-                                self.workingDir)
+                                self.workingDir,
+                                hitCache*2,
+                                hitCache*4)
 
             listeners.append(multiprocessing.Process(target=L.start))
 
         # start the thread that will handle the placing of results in the DB
-        result_handling_process = multiprocessing.Process(target=self._updateHits, args=(contigHeaders, result_queue)).start()
+        result_handling_process = multiprocessing.Process(target=self._updateHits, args=(contigHeaders, result_queue, hitCache)).start()
         # give the updater time to fire up
         time.sleep(1)
         
@@ -348,22 +364,23 @@ class Server(object):
         if result_handling_process is not None:
             result_handling_process.join()
 
-    def _updateHits(self, contigHeaders, resultQueue):
-        II = ImportInterface(self.dbFileName,verbosity=100)
+    def _updateHits(self, contigHeaders, resultQueue, hitCache):
+        II = ImportInterface(self.dbFileName,verbosity=-1)
         tmp = []
         while(True):
             current = resultQueue.get(block=True, timeout=None)
             #print "current capacity of resultQueue %d" % int(resultQueue.qsize())
             if current == None: 
-                print "current is None"
-                II.importHits(tmp)
+                #print ">> DBG Current is None"
+                II.importHits(contigHeaders, tmp)
                 break
             else:
                 tmp.append(current)
             
-            print "Length of tmp is %d" % len(tmp)
+            #print ">> DBG Length of tmp is %d" % len(tmp)
              
-            if len(tmp) >= 4: # set size limit of queue
+            if len(tmp) >= hitCache: # set size limit of queue
+                print ">> DBG " + datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') + " Length of tmp is %d :: current capacity of resultQueue %d" % (len(tmp), int(resultQueue.qsize()))
                 II.importHits(contigHeaders, tmp)
                 tmp = []
 

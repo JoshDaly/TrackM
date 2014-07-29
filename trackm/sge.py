@@ -28,7 +28,7 @@ __author__ = "Josh Daly, Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Josh Daly", "Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __maintainer__ = "Josh Daly"
 __email__ = "joshua.daly@uqconnect.edu.au"
 __status__ = "Dev"
@@ -97,7 +97,7 @@ class SGE(object):
         ret_str += "#$ -e %s\n" % sge_err_fn
         ret_str += "mkdir -p %s\n" % local_tmp_working_dir
         ret_str += "cd %s\n" % local_tmp_working_dir
-        ret_str += "module load trackm/josh\n"
+        ret_str += "module load trackm\n"
         ret_str += "module load mummer\n"
         ret_str += "trackm worker %d %s %s %s %s %0.3f %s\n" % (jobId, gPath1, gid1, gPath2, gid2, ani, url)
 

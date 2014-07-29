@@ -28,7 +28,7 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
 __status__ = "Dev"
@@ -44,6 +44,7 @@ import sys
 # local includes
 from dancingPeasant.exceptions import *
 from dancingPeasant.interface import Interface
+from dancingPeasant.interface import Condition
 from trackm.db import TrackMDB
 import csv
 
@@ -127,9 +128,7 @@ class ImportInterface(Interface):
 
         if len(existing_pairs) > 0:
             for pair in existing_pairs:
-                print pair
                 gid_pairs["%s|%s" % (pair[0], pair[1])] = True
-            print gid_pairs
             for row in to_db_b:
                 this_pair = "%s|%s" % (row[1], row[2])
                 if this_pair not in gid_pairs:
@@ -159,15 +158,14 @@ class ImportInterface(Interface):
         new_contigs = []
         new_seqs = []
         pids_anis = []
-        
+
         for hit in hits:
-            print hit
             if hit == None:
                 pass
             else:
                 pid =      hit[0] # array of pids
                 ani_comp = hit[1] # array of anis
-                pids_anis.append([pid,ani_comp])
+                pids_anis.append([ani_comp,pid])
                 for i in range(3, len(hit)):
                     # for each new hit
                     # work out if we'e seen the contigs before or make a new entry
@@ -179,7 +177,7 @@ class ImportInterface(Interface):
                         cid1 = cid
                         contigHeaders[hit[i].contig1] = cid1
                         new_contigs.append((cid, "%s" % hit[i].contig1))
-        
+
                     try:
                         cid2 = contigHeaders[hit[i].contig2]
                     except KeyError:
@@ -188,7 +186,7 @@ class ImportInterface(Interface):
                         cid2 = cid
                         contigHeaders[hit[i].contig2] = cid2
                         new_contigs.append((cid, "%s" % hit[i].contig2))
-        
+
                     # we know the seqs are new
                     sqid += 1
                     sqid1 = sqid
@@ -196,10 +194,10 @@ class ImportInterface(Interface):
                     sqid += 1
                     sqid2 = sqid
                     new_seqs.append((sqid2, hit[i].seq2))
-        
+
                     # new hid and add!
                     hid += 1
-        
+
                     # make a tuple for the add
                     to_db.append(tuple([hid,
                                         pid,
@@ -216,13 +214,13 @@ class ImportInterface(Interface):
                                         hit[i].identity]
                                        )
                                  )
-    
+
         # insert the hits
         self.insert("hits", ["hid", "pid", "cid_1", "start_1", "len_1", "strand_1", "sqid_1", "cid_2", "start_2", "len_2", "strand_2", "sqid_2", "ident"], to_db)
 
         # insert the ani_comp into the pairs table to say that this pair has been processed
-                            
-        self.updatePairsBulk(pids_anis)
+        C = Condition("pid","=")
+        self.update('pairs', ['ani_comp'], pids_anis, C)
 
         # insert the new contigs
         self.insert('contigs', ["cid", "header"], new_contigs)
@@ -231,26 +229,12 @@ class ImportInterface(Interface):
         self.insert('seqs', ["sqid", "seq"], new_seqs)
 
         # update Id counts
-        self.updateIds(sqid, hid, cid, oid)
+        self.update('ids', ['sqid', 'hid', 'cid', 'oid'], [(sqid, hid, cid, oid)], 1)
 
         self.disconnect()
 
 #------------------------------------------------------------------------------
 # Handling IDs
-
-    def updateIds(self, sqid, hid, cid, oid):
-        """Update the values of the highest Ids for certain primary keys"""
-        disconnect = True
-        try:
-            self.connect()
-        except DP_FileAlreadyOpenException:
-            # sometimes called from within a connect block
-            disconnect = False
-
-        self.updateSingle('ids', ['sqid', 'hid', 'cid', 'oid'], tuple([sqid, hid, cid, oid]))
-
-        if disconnect:
-            self.disconnect()
 
     def getHighestIds(self):
         """Get the values of the highest Ids for certain primary keys"""
@@ -267,27 +251,6 @@ class ImportInterface(Interface):
             self.disconnect()
 
         return ids[0]
-
-    def updatePairsBulk(self,pids_anis):
-        """Update a single value in the DB
-
-        table: is a single string. EX: 'bob'
-        cols: is an ordered list of column names in the table ['col1', 'col2', ... ]is a list of columns to insert into
-        vals is a list of tuples of values to insert
-
-        the ordering of cols and vals should make sense
-
-        condition: is a string which states the SQL condition. i.e. the part that comes after the where:
-
-            "type='big' or color='red'"
-
-        Note: the use of single quotes on the values. This is important.
-        """
-        cur = self.db.getCursor()
-        sql=('UPDATE pairs SET ani_comp=? WHERE pid = ?')
-        cur.executemany(sql, pids_anis)
-        self.db.commit()
-
 
 ###############################################################################
 ###############################################################################
