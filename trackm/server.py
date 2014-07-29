@@ -47,6 +47,7 @@ import multiprocessing
 import zmq
 import json
 import time
+import datetime
 import random
 import jsonpickle as jp
 import zlib
@@ -137,6 +138,8 @@ class ProcessListener(object):
                  queueManager,   # SGE queue to place jobs on
                  sgeBaseDir,     # where to write SGE scripts to
                  workingDir,     # where tmp files will be stored
+                 resQLowerLimit, # halt adding new jobs to the queue till the result queu reaches this size
+                 resQUpperLimit  # when the result queue reaches this size
                  ):
         # set up the listener
         self.ip = ip
@@ -146,6 +149,8 @@ class ProcessListener(object):
         self.queueManager = queueManager
         self.sgeBaseDir = sgeBaseDir
         self.workingDir = workingDir
+        self.resQUpperLimit = resQUpperLimit
+        self.resQLowerLimit = resQLowerLimit
 
     def start(self):
         """start the listener"""
@@ -153,6 +158,12 @@ class ProcessListener(object):
         while True:
             # get the next task
             #print ">> DBG about to get task"
+
+            # don't let the result queue get too big!
+            if int(self.resultQueue.qsize()) > self.resQUpperLimit:
+                while int(self.resultQueue.qsize()) > self.resQLowerLimit:
+                    time.sleep(10)
+
             task = self.taskQueue.get(block=True, timeout=None)
             if task == None:
                 # poison pill
@@ -274,6 +285,7 @@ class Server(object):
                  hitCache=1000   # number of hits to cache before writing to database
                  ):
         """process any specified outstanding pairs"""
+        print ">> DBG " + datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         print "Processing outstanding pairs"
 
         # set tmp dirs
@@ -326,7 +338,9 @@ class Server(object):
                                 result_queue,
                                 self.queueManager,
                                 self.sgeBaseDir,
-                                self.workingDir)
+                                self.workingDir,
+                                hitCache*2,
+                                hitCache*4)
 
             listeners.append(multiprocessing.Process(target=L.start))
 
@@ -366,6 +380,7 @@ class Server(object):
             #print ">> DBG Length of tmp is %d" % len(tmp)
              
             if len(tmp) >= hitCache: # set size limit of queue
+                print ">> DBG " + datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') + " Length of tmp is %d :: current capacity of resultQueue %d" % (len(tmp), int(resultQueue.qsize()))
                 II.importHits(contigHeaders, tmp)
                 tmp = []
 
