@@ -46,6 +46,7 @@ import numpy as np
 from dancingPeasant.interface import Interface
 from dancingPeasant.interface import Condition
 from trackm.db import TrackMDB
+from trackm.hit import HitData
 
 ###############################################################################
 ###############################################################################
@@ -114,17 +115,48 @@ class ViewInterface(Interface):
         return dict(headers)
 
     def getHitData(self,
-                condition       # conditional statement for searching the db
-                ):
+                   condition       # conditional statement for searching the db
+                   ):
+        """Populate a hit data instance with data that fits the given condition"""
+
+        ret_HD = HitData()
         self.connect()
-        rows = self.select('pairs', ['pid'], condition)
+
+        # get all pirs that match the ani cutoff
+        rows = self.select('pairs', ['pid', 'ani_comp', 'gid_1', 'gid_2'], condition=condition)
         if len(rows) == 0:
-            return None
-        pids = [i[0] for i in rows]
+            return ret_HD
+
+        pids = tuple([i[0] for i in rows])
+
+        # get all the hits for these guys
+        C = Condition("pid", "in", "("+", ".join(["?" for _ in pids])+")")
+        hits = self.select("hits", ['pid', 'len_1', 'len_2'], condition=C, values=pids)
+
         self.disconnect()
 
+        # make a tmp dict of pid -> cidTuple
+        pid_lookup = {}
+        for row in rows:
+            key = ret_HD.makeKey(row[2],row[3])
+            pid_lookup[row[0]] = key
+            ret_HD.workingIds[key[0]] = False               # we've seen these guys now
+            ret_HD.workingIds[key[1]] = False
+            ret_HD.addHit(key[0], key[1], 0)                # cal with length 0 to initialise an empty hit between these two genomes
+            ret_HD.addANIIdentity(key[0], key[1], row[1])   # add the identity for this pair
 
-        return pids
+        # now parse the hits
+        for hit in hits:
+            length = np.mean(hit[1:])              # mean length used here
+            key = pid_lookup[hit[0]]               # get the key (gid1, gid2)
+            ret_HD.addHit(key[0], key[1], length)  # add the length (increments hit count)
+            ret_HD.workingIds[key[0]] = True       # we've seen these guys now
+            ret_HD.workingIds[key[1]] = True
+
+
+
+
+        return ret_HD
 
 ###############################################################################
 ###############################################################################

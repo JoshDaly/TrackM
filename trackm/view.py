@@ -101,7 +101,6 @@ class View(object):
 
            of DNA transferred
         """
-         """ Produce scatter plot """
         xs = []         # hits
         ys = []         # cumulative contigs lengths
         workingIds = [] # master list of genome tree ids

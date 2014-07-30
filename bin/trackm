@@ -273,7 +273,7 @@ if __name__ == '__main__':
                                              help='Mikes test entry point',
                                              description='Load data!')
     test_parser.add_argument("db", help="Path to the TrackM database to use")
-    test_parser.add_argument("-a", "--ani", type=float, default=1., help="ANI cutoff")
+    test_parser.add_argument("-a", "--ani", type=float, default=100., help="ANI cutoff")
     test_parser.add_argument("-b", "--batch", type=int, default=1, help="Batch to use")
 
     #-------------------------------------------------
