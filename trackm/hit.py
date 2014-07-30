@@ -40,6 +40,8 @@ __status__ = "Dev"
 
 import random
 import string
+import numpy as np
+np.seterr(all='raise')
 
 ###############################################################################
 ###############################################################################
@@ -126,81 +128,155 @@ class Hit(object):
 class HitData(object):
     """class for capturing hit data"""
     def __init__(self):
-        self.hits               = {} # dict to store hit data
-        self.length             = {} # dict to store length data
+        self.hitCounts          = {} # dict to store hit data
+        self.hitLengthTotals    = {} # dict to store length data
+        self.workingIds         = {} # dict used Ids { gid -> bool } True == has hit
+        self.identityAni        = {} # dict to store ANI distance
+
+        #---------
+        # OLDER
+        #---------
         self.distance16S        = {} # dict to store 16S distance
         self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
         self.standardDeviation  = {} # dict to store standard deviation at each percentage
-    
-    def addLen(self,
-               _ID_1,
-               _ID_2,
-               _LGT_LEN,
-               ):   
-        """create cumulative contig length object"""
-        try: 
-            self.length[_ID_1][_ID_2] += _LGT_LEN
+
+    def makeKey(self, gid1, gid2):
+        """Consistent ordering of genome Ids"""
+        if gid1 < gid2:
+            return (gid1, gid2)
+        return (gid2, gid1)
+
+    def addHit(self,
+               gid1,
+               gid2,
+               lgtLen,
+               ):
+        """update cumulative contig length of genome hits
+
+        NOTE: id1 < id2 always!
+
+        Call this function with lgetLen == 0 to initialise an empty hit
+        """
+        incCount = True
+        try:
+            self.hitLengthTotals[gid1][gid2] += lgtLen
         except KeyError:
+            self.hitLengthTotals[gid1] = {gid2 : lgtLen}
+            incCount = False
+            if lgtLen == 0:
+                self.hitCounts[gid1] = {gid2 : 0}
+            else:
+                self.hitCounts[gid1] = {gid2 : 1}
+        # this should work every time
+        if incCount:
+            self.hitCounts[gid1][gid2] += 1
+
+    def getAniDist(self):
+        hit_anis = []
+        miss_anis = []
+        ani_hit_counts = {}
+        ani_miss_counts = {}
+        for gid1 in self.workingIds.keys():
             try:
-                self.length[_ID_1][_ID_2]  = _LGT_LEN
-            except KeyError:
-                self.length[_ID_1] = {_ID_2 : _LGT_LEN}
-        
-        try: 
-            self.length[_ID_2][_ID_1] += _LGT_LEN
+                for gid2 in self.identityAni[gid1].keys():
+                    if self.workingIds[gid1]:
+                        # hit
+                        try:
+                            hit_anis.append(self.identityAni[gid1][gid2])
+                            try:
+                                ani_hit_counts[int(self.identityAni[gid1][gid2])] += self.hitCounts[gid1][gid2]
+                            except KeyError:
+                                ani_hit_counts[int(self.identityAni[gid1][gid2])] = self.hitCounts[gid1][gid2]
+                        except: pass
+                    else:
+                        # miss
+                        try:
+                            miss_anis.append(self.identityAni[gid1][gid2])
+                            try:
+                                ani_miss_counts[int(self.identityAni[gid1][gid2])] += self.hitCounts[gid1][gid2]
+                            except KeyError:
+                                ani_miss_counts[int(self.identityAni[gid1][gid2])] = self.hitCounts[gid1][gid2]
+                        except: pass
+            except: pass
+
+        raw_hits = np.bincount(np.array(hit_anis).astype('int'))
+        raw_miss = np.bincount(np.array(miss_anis).astype('int'))
+
+        ret_hit_line = np.zeros(100)
+        ret_miss_line = np.zeros(100)
+        ret_hit_moutain = np.zeros(100)
+        ret_miss_mountain = np.zeros(100)
+
+        print ani_miss_counts
+        print raw_miss
+        print ani_hit_counts
+        print raw_hits
+
+        return (ret_hit_line, ret_miss_line, ret_hit_moutain, ret_miss_mountain)
+
+    def addANIIdentity(self,
+                       gid1,
+                       gid2,
+                       identity
+                       ):
+        """Add the ANI identity for a pair of genomes
+
+        NOTE: id1 < id2 always!
+        """
+        try:
+            self.identityAni[gid1][gid2] = identity
         except KeyError:
-            try:
-                self.length[_ID_2][_ID_1] = _LGT_LEN
-            except KeyError:
-                self.length[_ID_2] = {_ID_1 : _LGT_LEN}
-                    
+            self.identityAni[gid1] = {gid2 : identity}
+
+    def getGidsWithHits(self):
+        """return a list of only those gids that have > 0 hits"""
+        return [i for i in self.workingIds.keys() if self.workingIds[i]]
+
+    def __str__(self):
+        print self.getAniDist()
+        ret_str = "********************************************************************\n"
+        ret_str += "Total genomes in hits: %d\n" % len(self.workingIds)
+        ret_str += "********************************************************************"
+        return ret_str
+
+    #--------------------------------------------------------------------------------
+    # OLDER  --> mostly good, just older
+    #--------------------------------------------------------------------------------
+
     def add16SDist(self,
                    _ID_1,
                    _ID_2,
                    _PERC_ID
-                   ): 
+                   ):
         """create 16S distance object, round up %"""
-        try: 
+        try:
             self.distance16S[_ID_1][_ID_2] = math.ceil(_PERC_ID)
         except KeyError:
             self.distance16S[_ID_1] = {_ID_2 : math.ceil(_PERC_ID)}
-        try: 
+        try:
             self.distance16S[_ID_2][_ID_1] = math.ceil(_PERC_ID)
         except KeyError:
             self.distance16S[_ID_2] = {_ID_1 : math.ceil(_PERC_ID)}
-                
-    def addHit(self,
-               _ID_1,
-               _ID_2,
-               ):
-        """add an LGT instance to the data store"""
-        try: 
-            self.hits[_ID_1][_ID_2] += 1
-        except KeyError:
-            try:
-                self.hits[_ID_1][_ID_2] = 1
-            except KeyError:
-                self.hits[_ID_1] = {_ID_2 : 1}  
-            
+
     def getIDS(self):
         """return array of IDs"""
-        return self.hits.keys()
+        return self.hitCounts.keys()
 
     def groupBy16S(self):
         """calculate the number of transfers per rounded 16S score"""
-        for id_1 in self.hits.keys():
-            for id_2 in self.hits[id_1]:
+        for id_1 in self.hitCounts.keys():
+            for id_2 in self.hitCounts[id_1]:
                 try:
-                    #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance16S[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] += [self.hitCounts[id_1][id_2]]
+                    self.roundedDistance[self.distance16S[id_1][id_2]] += self.hitCounts[id_1][id_2]     # total hits per percentage
                     #self.roundedDistance[self.distance[id_1][id_2]] += 1     # total hits per percentage
-                    self.standardDeviation[self.distance16S[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
+                    self.standardDeviation[self.distance16S[id_1][id_2]] += [self.hitCounts[id_1][id_2]] # hit array per percentage
                 except KeyError:
-                    #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance16S[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] = [self.hitCounts[id_1][id_2]]
+                    self.roundedDistance[self.distance16S[id_1][id_2]] = self.hitCounts[id_1][id_2]     # total hits per percentage
                     #self.roundedDistance[self.distance[id_1][id_2]] = 1     # total hits per percentage
-                    self.standardDeviation[self.distance16S[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
-                  
+                    self.standardDeviation[self.distance16S[id_1][id_2]] = [self.hitCounts[id_1][id_2]] # hit array per percentage
+
     def calculateStD(self,perc):
         """return the standard deviation for each percentage"""
         hitList = []
@@ -208,8 +284,8 @@ class HitData(object):
         print perc,hitList
         stdev = np.array(hitList)
         #print  str(np.std(stdev, dtype=np.float64))
-        return  np.std(stdev, dtype=np.float64) 
-                    
+        return  np.std(stdev, dtype=np.float64)
+
     def numHits16S(self):
         """print stats about the number of hits in the roundedDistance dict"""
         for perc in self.roundedDistance.keys():
@@ -225,14 +301,14 @@ class HitData(object):
             print "Min number of hits: %i" % (min(self.roundedDistance[perc]))
             print "Max number of hits: %i" % (max(self.roundedDistance[perc]))
             print "********************************************************************"
-            
+
     def return16SPercArray(self):
         """return array of rounded 16S percentages """
         return self.roundedDistance.keys()
-        
+
     def returnNormValues(self):
         """return array of hits normalised by 100 comparisons per rounded 16S score"""
-        return 
+        return
 
 ###############################################################################
 ###############################################################################

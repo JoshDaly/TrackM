@@ -45,7 +45,7 @@ import sys
 # local imports
 from trackm.worker import Worker
 from trackm.server import Server
-#from trackm.view import View
+from trackm.view import View as tmView
 from misc.view import View
 from trackm.exceptions import *
 
@@ -119,30 +119,38 @@ def doWork(args):
         W.compareGenomes(args.minLength, args.minIdentity)
 
     elif(args.subparser_name == 'view'):
-        # set up a TrackM view instance
-        V = View(args.transfersFile)
-        print "*******************************************************************************"
-        print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
-        print "*******************************************************************************"
-        V.readFile()
-        if args.chartType == "Scatter":
+        if args.view_parser_name == 'plot':
+            # plot some stuff
+            # set up a TrackM view instance
+            V = View(args.transfersFile)
             print "*******************************************************************************"
-            print "                          Type :  Scatter plot                                    "
+            print " [[TrackM %s]] Running in visualisation mode..." % (__version__)
             print "*******************************************************************************"
-            V.scatterPlot()
-        elif args.chartType == "Frequency":
-            print "*******************************************************************************"
-            print "                          Type : Frequency plot                                  "
-            print "*******************************************************************************"
-            V.frequencyPlot(args.lookUpFile,
-                            args.comparisonsFile,
-                            args.dirtyFile)
-        else:
-            print "*******************************************************************************"
-            print "                          Type : Network plot                                    "
-            print "*******************************************************************************"
-            V.networkPlot()
+            V.readFile()
+            if args.chartType == "Scatter":
+                print "*******************************************************************************"
+                print "                          Type :  Scatter plot                                    "
+                print "*******************************************************************************"
+                V.scatterPlot()
+            elif args.chartType == "Frequency":
+                print "*******************************************************************************"
+                print "                          Type : Frequency plot                                  "
+                print "*******************************************************************************"
+                V.frequencyPlot(args.lookUpFile,
+                                args.comparisonsFile,
+                                args.dirtyFile)
+            else:
+                print "*******************************************************************************"
+                print "                          Type : Network plot                                    "
+                print "*******************************************************************************"
+                V.networkPlot()
+        elif args.view_parser_name == 'test':
+            # mikes test
+            V = tmView(args.db)
+            V.testSomething(ani=args.ani, batch=args.batch)
 
+        else:
+            print "ERROR: Unknown option '%s' for mode 'view'" % args.view_parser_name
 
     else:
         print "ERROR: Unknown mode '%s'" % args.subparser_name
@@ -245,13 +253,28 @@ if __name__ == '__main__':
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                         help='Utilities for visualising HGT events and stats',
                                         description='Utilities for visualising HGT events and stats')
+    view_subparsers = view_parser.add_subparsers(help="--", dest='view_parser_name')
+
+    plot_parser = view_subparsers.add_parser('plot',
+                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                             help='Make plots',
+                                             description='Plot some stuff')
+
     #view_parser.add_argument("url", type=int, help="URL of the TrackM server")
     #view_parser.add_argument("port", type=int, help="Port the server is listening on")
-    view_parser.add_argument("transfersFile", help="csv file containing transfers")
-    view_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
-    view_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
-    view_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S")
-    view_parser.add_argument("-d","--dirtyFile", help="File containing dirty transfer events")
+    plot_parser.add_argument("transfersFile", help="csv file containing transfers")
+    plot_parser.add_argument("-c","--chartType", default="Network",help="Plot to be produced; vocab: Network, Scatter, Frequency")
+    plot_parser.add_argument("-lookup","--lookUpFile", help="File containing matched IMG IDs and Genome Tree IDs")
+    plot_parser.add_argument("-comparison","--comparisonsFile", help="File containing IMG_ID IMG_ID 16S")
+    plot_parser.add_argument("-d","--dirtyFile", help="File containing dirty transfer events")
+
+    test_parser = view_subparsers.add_parser('test',
+                                             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                             help='Mikes test entry point',
+                                             description='Load data!')
+    test_parser.add_argument("db", help="Path to the TrackM database to use")
+    test_parser.add_argument("-a", "--ani", type=float, default=100., help="ANI cutoff")
+    test_parser.add_argument("-b", "--batch", type=int, default=1, help="Batch to use")
 
     #-------------------------------------------------
     # get and check options
