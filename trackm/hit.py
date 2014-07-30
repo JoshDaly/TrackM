@@ -123,6 +123,117 @@ class Hit(object):
                           ]
                          )
 
+class HitData(object):
+    """class for capturing hit data"""
+    def __init__(self):
+        self.hits               = {} # dict to store hit data
+        self.length             = {} # dict to store length data
+        self.distance16S        = {} # dict to store 16S distance
+        self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
+        self.standardDeviation  = {} # dict to store standard deviation at each percentage
+    
+    def addLen(self,
+               _ID_1,
+               _ID_2,
+               _LGT_LEN,
+               ):   
+        """create cumulative contig length object"""
+        try: 
+            self.length[_ID_1][_ID_2] += _LGT_LEN
+        except KeyError:
+            try:
+                self.length[_ID_1][_ID_2]  = _LGT_LEN
+            except KeyError:
+                self.length[_ID_1] = {_ID_2 : _LGT_LEN}
+        
+        try: 
+            self.length[_ID_2][_ID_1] += _LGT_LEN
+        except KeyError:
+            try:
+                self.length[_ID_2][_ID_1] = _LGT_LEN
+            except KeyError:
+                self.length[_ID_2] = {_ID_1 : _LGT_LEN}
+                    
+    def add16SDist(self,
+                   _ID_1,
+                   _ID_2,
+                   _PERC_ID
+                   ): 
+        """create 16S distance object, round up %"""
+        try: 
+            self.distance16S[_ID_1][_ID_2] = math.ceil(_PERC_ID)
+        except KeyError:
+            self.distance16S[_ID_1] = {_ID_2 : math.ceil(_PERC_ID)}
+        try: 
+            self.distance16S[_ID_2][_ID_1] = math.ceil(_PERC_ID)
+        except KeyError:
+            self.distance16S[_ID_2] = {_ID_1 : math.ceil(_PERC_ID)}
+                
+    def addHit(self,
+               _ID_1,
+               _ID_2,
+               ):
+        """add an LGT instance to the data store"""
+        try: 
+            self.hits[_ID_1][_ID_2] += 1
+        except KeyError:
+            try:
+                self.hits[_ID_1][_ID_2] = 1
+            except KeyError:
+                self.hits[_ID_1] = {_ID_2 : 1}  
+            
+    def getIDS(self):
+        """return array of IDs"""
+        return self.hits.keys()
+
+    def groupBy16S(self):
+        """calculate the number of transfers per rounded 16S score"""
+        for id_1 in self.hits.keys():
+            for id_2 in self.hits[id_1]:
+                try:
+                    #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
+                    self.roundedDistance[self.distance16S[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] += 1     # total hits per percentage
+                    self.standardDeviation[self.distance16S[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
+                except KeyError:
+                    #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
+                    self.roundedDistance[self.distance16S[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
+                    #self.roundedDistance[self.distance[id_1][id_2]] = 1     # total hits per percentage
+                    self.standardDeviation[self.distance16S[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
+                  
+    def calculateStD(self,perc):
+        """return the standard deviation for each percentage"""
+        hitList = []
+        hitList = self.standardDeviation[perc]
+        print perc,hitList
+        stdev = np.array(hitList)
+        #print  str(np.std(stdev, dtype=np.float64))
+        return  np.std(stdev, dtype=np.float64) 
+                    
+    def numHits16S(self):
+        """print stats about the number of hits in the roundedDistance dict"""
+        for perc in self.roundedDistance.keys():
+            totalPerPercent = 0
+            length = len(self.roundedDistance[perc])
+            for i in self.roundedDistance[perc]:
+                totalPerPercent = totalPerPercent + i
+            print "********************************************************************"
+            print "%i" % (perc)
+            print "Total hits: %i" % (totalPerPercent)
+            print "Number of comparisons: %i" % (length)
+            print "Average hits: %f" % (totalPerPercent/float(length))
+            print "Min number of hits: %i" % (min(self.roundedDistance[perc]))
+            print "Max number of hits: %i" % (max(self.roundedDistance[perc]))
+            print "********************************************************************"
+            
+    def return16SPercArray(self):
+        """return array of rounded 16S percentages """
+        return self.roundedDistance.keys()
+        
+    def returnNormValues(self):
+        """return array of hits normalised by 100 comparisons per rounded 16S score"""
+        return 
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
