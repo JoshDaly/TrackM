@@ -41,38 +41,87 @@ __status__ = "Dev"
 ###############################################################################
 
 # system imports
+import math
+import numpy as np
 
 # local imports
+from trackm.viewInterface import ViewInterface, Condition
+
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
-class View(object):
+class ImagePropertiesGeneral(object):
+    """Standard image output properties"""
     def __init__(self,
-                 serverURL,         # URL of the commanding TrackM server
-                 serverPort         # port of the commanding TrackM server
+                 imageFormat,
+                 xlabel,
+                 ylabel,
+                 title,
+                 outFile,
+                 dpi,
+                 labelFontSize,
+                 markerStyle,
+                 markerSize,
+                 edgeColour
                  ):
-        self.serverURL = serverURL
-        self.serverPort = serverPort
+        self.imageFormat   = imageFormat
+        self.xLabel        = xLabel
+        self.yLabel        = yLabel
+        self.title         = title
+        self.outFile       = outFile
+        self.dpi           = dpi 
+        self.labelFontSize = labelFontSize
+        self.markerStyle   = markerStyle
+        self.markerSize    = markerSize
+        self.edgeColour    = edgeColour 
 
-    def connect(self):
-        """Try connect to the TrackM server"""
+class ImagePropertiesFrequency(object,
+                               ImagePropertiesGeneral):
+    """options specific for frequency plot"""
+    def __init__(self
+                 ):
         pass
 
-    def plotSomething(self):
-        """Place holder"""
-        # an example entry point from the main TrackM entry point
-        # Ideally, you should have a separate plot function
-        # defined for each type of plot.
+        
+class ImagePropertiesScatter(object,
+                             ImagePropertiesGeneral):
+    """options specific for scatter plot """
+    def __init__(self
+                 ):
+        pass
+        
+class ImagePropertiesNetwork(object,
+                             ImagePropertiesGeneral):
+    """options specific for network plot """
+    def __init__(self,
+                 nodeColour, # colour of nodes, can be array of colours of len(x)
+                 nodeFontColour, # colour of node labels
+                 nodeFontSize, # size of node labels 
+                 nodeLabels # labels on/off
+                 ):
+        ImagePropertiesGeneral.__init__(self, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle)
+        self.nodeColour     = nodeColour
+        self.nodeFontColour  = nodeFontColour
+        self.nodeFontSize    = nodeFontSize
+        self.nodeLabels      = nodeLabels      
 
-        # >>>>>>>>>> REMOVE THIS WHEN YOU HAVE CODE HERE <<<<<<<<<<<<<<<<<<
-        from inspect import currentframe, getframeinfo
-        frameinfo = getframeinfo(currentframe())
-        print "Make me plot something! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
-        # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 
+class Plotter(object):
+    """Class for plotting functions
+    Scatter
+    Network
+    Frequency"""
+    
+    def __init__(self):
+        self.HD = HitData()
+    
     def scatterPlot(self):
         """Produces a scatter plot indicating the number of lgt events
         
@@ -80,21 +129,25 @@ class View(object):
            
            of DNA transferred
         """
-         """ Produce scatter plot """
+        # objects
+        IPS = ImagePropertiesScatter()
+        
+        """ Produce scatter plot """
         xs = []         # hits
         ys = []         # cumulative contigs lengths
         workingIds = [] # master list of genome tree ids
         
+        
+        
         ax.scatter(xs,
                    ys,
-                   s=3,
-                   marker='s',
+                   s=IPS.markerSize,
+                   marker=IPS.markerStyle,
                    alpha=1,
                    c=heatmap_colours,
                    edgecolors = 'grey',
                    linewidths = 0.1,
                    )
-        
         
         #Plot labels
         plt.xlabel('Cumulative length of contigs (bp)')
@@ -269,6 +322,50 @@ class View(object):
         plt.xlabel('16S distance (%)')
         plt.ylabel('LGT per 100 comparisons')
         plt.show() # plot 
+    
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
+class View(object):
+    def __init__(self,
+                 serverURL,         # URL of the commanding TrackM server
+                 serverPort         # port of the commanding TrackM server
+                 ):
+        self.serverURL = serverURL
+        self.serverPort = serverPort
+        
+    def testSomething(self,
+                      ani=1.,             # only get hits with this ani or less
+                      batch=None          # only get hits from this batch (None == all)
+                      ):
+        # get an interface to the DB
+        VI = ViewInterface(self.dbFileName)
+
+        # build the condition we want to select on and get the hit data
+        C = Condition("ani_comp", "<=", ani)
+        if batch is not None:
+            C = Condition(C, "and", Condition("batch", "=", batch))
+
+        hits = VI.getHitData(C)
+        print hits
+        
+
+    def connect(self):
+        """Try connect to the TrackM server"""
+        pass
+
+    def plotSomething(self):
+        """Place holder"""
+        # an example entry point from the main TrackM entry point
+        # Ideally, you should have a separate plot function
+        # defined for each type of plot.
+
+        
+
+    
     
     
     

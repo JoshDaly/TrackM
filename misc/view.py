@@ -275,7 +275,7 @@ class HitData(object):
     def __init__(self):
         self.hits               = {} # dict to store hit data
         self.length             = {} # dict to store length data
-        self.distance           = {} # dict to store 16S distance
+        self.distance16S           = {} # dict to store 16S distance
         self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
         self.standardDeviation  = {} # dict to store standard deviation at each percentage
     
@@ -308,13 +308,13 @@ class HitData(object):
                    ): 
         """create 16S distance object, round up %"""
         try: 
-            self.distance[_ID_1][_ID_2] = math.ceil(_PERC_ID)
+            self.distance16S[_ID_1][_ID_2] = math.ceil(_PERC_ID)
         except KeyError:
-            self.distance[_ID_1] = {_ID_2 : math.ceil(_PERC_ID)}
+            self.distance16S[_ID_1] = {_ID_2 : math.ceil(_PERC_ID)}
         try: 
-            self.distance[_ID_2][_ID_1] = math.ceil(_PERC_ID)
+            self.distance16S[_ID_2][_ID_1] = math.ceil(_PERC_ID)
         except KeyError:
-            self.distance[_ID_2] = {_ID_1 : math.ceil(_PERC_ID)}
+            self.distance16S[_ID_2] = {_ID_1 : math.ceil(_PERC_ID)}
                 
     def addHit(self,
                _ID_1,
@@ -339,14 +339,14 @@ class HitData(object):
             for id_2 in self.hits[id_1]:
                 try:
                     #self.roundedDistance[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
+                    self.roundedDistance[self.distance16S[id_1][id_2]] += self.hits[id_1][id_2]     # total hits per percentage
                     #self.roundedDistance[self.distance[id_1][id_2]] += 1     # total hits per percentage
-                    self.standardDeviation[self.distance[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
+                    self.standardDeviation[self.distance16S[id_1][id_2]] += [self.hits[id_1][id_2]] # hit array per percentage
                 except KeyError:
                     #self.roundedDistance[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]]
-                    self.roundedDistance[self.distance[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
+                    self.roundedDistance[self.distance16S[id_1][id_2]] = self.hits[id_1][id_2]     # total hits per percentage
                     #self.roundedDistance[self.distance[id_1][id_2]] = 1     # total hits per percentage
-                    self.standardDeviation[self.distance[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
+                    self.standardDeviation[self.distance16S[id_1][id_2]] = [self.hits[id_1][id_2]] # hit array per percentage
                   
     def calculateStD(self,perc):
         """return the standard deviation for each percentage"""
@@ -416,8 +416,61 @@ class View(object):
            
            of DNA transferred
         """
-        pass
+        """ Produce scatter plot """
+        xs = []         # hits
+        ys = []         # cumulative contigs lengths
+        workingIds = [] # master list of genome tree ids
         
+        ax.scatter(xs,
+                   ys,
+                   s=3,
+                   marker='s',
+                   alpha=1,
+                   c=heatmap_colours,
+                   edgecolors = 'grey',
+                   linewidths = 0.1,
+                   )
+        
+        
+        #Plot labels
+        plt.xlabel('Cumulative length of contigs (bp)')
+        plt.ylabel('No. of hits')
+        plt.title("Gut-Oral LGT events")
+        #ax.grid(b=True,which='both')
+        
+        #set the number of tick labels
+        for i in range(len(working_ids_list)):
+            ticks.append(i)
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        
+        #Change label names according to taxonomy
+        labels = [item.get_text() for item in ax.get_xticklabels()]
+        for i,v in enumerate(labels):
+            labels[i] = ordered_tax_string_lowest[i]
+        ax.set_xticklabels(labels,size=args.text_size)
+        ax.set_yticklabels(labels,size=args.text_size)
+        
+        #rotate x labels 90deg
+        plt.xticks(rotation=90)
+        
+        #adjust margin size
+        #plt.subplots_adjust(bottom=0.2)
+        plt.tight_layout()
+        
+        #plt.xticks(np.arange(min(xs), max(xs)+1,1.0))
+        #plt.yticks(np.arange(min(xs), max(xs)+1,1.0))
+        # set the plot axes
+        plt.axis([plot_border*-1,
+                  len(working_ids_list)+plot_border,
+                  plot_border*-1,
+                  len(working_ids_list)+plot_border])
+    
+        if args.show_plot == "True":
+            plt.show()
+        else:
+            plt.savefig(output_file,dpi=args.dpi,format=str(image_format))   
+            
         
     def networkPlot(self):
         """Produces a network plots with nodes representing individual genomes
