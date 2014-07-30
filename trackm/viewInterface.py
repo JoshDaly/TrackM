@@ -113,6 +113,19 @@ class ViewInterface(Interface):
             return {}
         return dict(headers)
 
+    def getHitData(self,
+                condition       # conditional statement for searching the db
+                ):
+        self.connect()
+        rows = self.select('pairs', ['pid'], condition)
+        if len(rows) == 0:
+            return None
+        pids = [i[0] for i in rows]
+        self.disconnect()
+
+
+        return pids
+
 ###############################################################################
 ###############################################################################
 ###############################################################################

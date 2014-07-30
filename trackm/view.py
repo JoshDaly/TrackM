@@ -43,6 +43,7 @@ __status__ = "Dev"
 # system imports
 
 # local imports
+from trackm.viewInterface import ViewInterface, Condition
 
 ###############################################################################
 ###############################################################################
@@ -51,11 +52,16 @@ __status__ = "Dev"
 
 class View(object):
     def __init__(self,
+                 dbFileName
+                 ):
+        self.dbFileName = dbFileName
+        """
                  serverURL,         # URL of the commanding TrackM server
                  serverPort         # port of the commanding TrackM server
                  ):
         self.serverURL = serverURL
         self.serverPort = serverPort
+        """
 
     def connect(self):
         """Try connect to the TrackM server"""
@@ -72,6 +78,21 @@ class View(object):
         frameinfo = getframeinfo(currentframe())
         print "Make me plot something! I live at File: %s Line: %s" % (frameinfo.filename, frameinfo.lineno)
         # >>>>>>>>>> END <<<<<<<<<<<<<<<<<<
+
+    def testSomething(self,
+                      ani=1.,             # only get hits with this ani or less
+                      batch=None          # only get hits from this batch (None == all)
+                      ):
+        # get an interface to the DB
+        VI = ViewInterface(self.dbFileName)
+
+        # build the condition we want to select on and get the hit data
+        C = Condition("ani_comp", "<=", ani)
+        if batch is not None:
+            C = Condition(C, "and", Condition("batch", "=", batch))
+
+        hits = VI.getHitData(C)
+        print hits
 
 
 ###############################################################################
