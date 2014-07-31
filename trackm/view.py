@@ -56,6 +56,7 @@ from trackm.viewInterface import ViewInterface, Condition
 class ImagePropertiesGeneral(object):
     """Standard image output properties"""
     def __init__(self,
+                 showPlot,
                  imageFormat,
                  xlabel,
                  ylabel,
@@ -67,6 +68,7 @@ class ImagePropertiesGeneral(object):
                  markerSize,
                  edgeColour
                  ):
+        self.showPlot      = showPlot
         self.imageFormat   = imageFormat
         self.xLabel        = xLabel
         self.yLabel        = yLabel
@@ -78,31 +80,60 @@ class ImagePropertiesGeneral(object):
         self.markerSize    = markerSize
         self.edgeColour    = edgeColour 
 
-class ImagePropertiesFrequency(object,
-                               ImagePropertiesGeneral):
+class ImagePropertiesFrequency(ImagePropertiesGeneral):
     """options specific for frequency plot"""
-    def __init__(self
+    def __init__(self,
+                 showPlot,
+                 imageFormat, 
+                 xlabel, 
+                 ylabel, 
+                 title, 
+                 outFile, 
+                 dpi, 
+                 labelFontSize, 
+                 markerStyle, 
+                 edgeColour
                  ):
-        pass
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
+        
 
         
-class ImagePropertiesScatter(object,
-                             ImagePropertiesGeneral):
+class ImagePropertiesScatter(ImagePropertiesGeneral):
     """options specific for scatter plot """
-    def __init__(self
+    def __init__(self,
+                 showPlot,
+                 imageFormat, 
+                 xlabel, 
+                 ylabel, 
+                 title, 
+                 outFile, 
+                 dpi, 
+                 labelFontSize, 
+                 markerStyle, 
+                 edgeColour
                  ):
-        pass
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
         
-class ImagePropertiesNetwork(object,
-                             ImagePropertiesGeneral):
+        
+class ImagePropertiesNetwork(ImagePropertiesGeneral):
     """options specific for network plot """
     def __init__(self,
+                 showPlot,
+                 imageFormat, 
+                 xlabel, 
+                 ylabel, 
+                 title, 
+                 outFile, 
+                 dpi, 
+                 labelFontSize, 
+                 markerStyle, 
+                 edgeColour,
                  nodeColour, # colour of nodes, can be array of colours of len(x)
                  nodeFontColour, # colour of node labels
                  nodeFontSize, # size of node labels 
                  nodeLabels # labels on/off
                  ):
-        ImagePropertiesGeneral.__init__(self, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle)
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
         self.nodeColour     = nodeColour
         self.nodeFontColour  = nodeFontColour
         self.nodeFontSize    = nodeFontSize
@@ -120,11 +151,19 @@ class Plotter(object):
     Network
     Frequency"""
     
-    def __init__(self):
-        self.HD = HitData()
+    def __init__(self,
+                 hitData):
+        self.HD = hitData
     
+        """
+        hitData objects:
+        self.hitCounts          = {} # dict to store hit data
+        self.hitLengthTotals    = {} # dict to store length data
+        self.workingIds         = {} # dict used Ids { gid -> bool } True == has hit
+        self.identityAni        = {} # dict to store ANI distance
+        """
 
-    def scatterPlot(self):
+    def makeScatterPlot(self):
         """Produces a scatter plot indicating the number of lgt events
 
            between each pair of genomes, as well as the cumulative length
@@ -141,9 +180,9 @@ class Plotter(object):
         workingIds = [] # master list of genome tree ids
 
         #Plot labels
-        plt.xlabel('Cumulative length of contigs (bp)')
-        plt.ylabel('No. of hits')
-        plt.title("Gut-Oral LGT events")
+        plt.xlabel(IPS.xLabel)
+        plt.ylabel(IPS.yLabel)
+        plt.title(IPS.title)
         #ax.grid(b=True,which='both')
 
         #set the number of tick labels
@@ -177,14 +216,17 @@ class Plotter(object):
         if args.show_plot == "True":
             plt.show()
         else:
-            plt.savefig(output_file,dpi=args.dpi,format=str(image_format))
+            plt.savefig(IPS.outFile,dpi=IPS.dpi,format=IPS.imageFormat)
 
 
-    def networkPlot(self):
+    def makeNetworkPlot(self):
         """Produces a network plots with nodes representing individual genomes
 
            and edges representing an LGT event between the two gneomes
         """
+        # objects
+        IPN = ImagePropertiesNetwork()
+        
         HD = HitData()
         """Creating the network graph"""
         G=nx.Graph()
@@ -206,15 +248,16 @@ class Plotter(object):
 
         pos= nx.spring_layout(G)
         #nx.draw(G,pos,node_color=values,with_labels=args.labels,width=edgeWidth,font_size=12,font_color='#006400')
-        nx.draw(G,pos,with_labels=True,font_size=12,font_color='#006400')
+        nx.draw(G,pos,with_labels=IPN.nodeLabels,font_size=IPN.nodeFontSize,font_color=IPN.nodeFontColour)
         #nx.draw(G,pos)
-        plt.show()
+        if args.show_plot:
+            plt.show()
+        else:
+            plt.savefig(IPS.outFile,dpi=IPS.dpi,format=IPS.imageFormat)
+        
+        
 
-
-    def frequencyPlot(self,
-                      lookUpFile,
-                      comparisonsFile,
-                      dirtyFile):
+    def makeFrequencyPlot(self):
         """Produces a line graph showing the frequency of LGT between genomes
 
            per 100 comparisons relative the ANI distance between the two genomes
@@ -222,6 +265,9 @@ class Plotter(object):
         NEEDS TO INCORPORATE ALL COMPARISONS, NOT JUST THE ONES THAT HAD AN LGT EVENT!!!!
         """
         # objects
+        IPF = ImagePropertiesFrequency()
+        
+        
         DFP = DistanceFileParser()
         IDFP = IDFileParser()
         self.DD = DistanceData()
@@ -321,10 +367,25 @@ class Plotter(object):
 ###############################################################################
 
 class View(object):
+    """visualise database"""
     def __init__(self,
-                 dbFileName
+                 dbFileName,
+                 ani=0.95,
+                 batch=None
                  ):
-        self.dbFileName = dbFileName
+        # get an interface to the DB
+        VI = ViewInterface(dbFileName)
+        
+        # build the condition we want to select on and get the hit data
+        C = Condition("ani_comp", "<=", ani)
+        if batch is not None:
+            C = Condition(C, "and", Condition("batch", "=", batch))
+        # get hitData object
+        self.hits = VI.getHitData(C)
+        
+        # call plotting functions
+        self.PLOT = Plotter(self.hits)
+        
         """
                  serverURL,         # URL of the commanding TrackM server
                  serverPort         # port of the commanding TrackM server
@@ -333,22 +394,99 @@ class View(object):
         self.serverPort = serverPort
         """
         
-    def testSomething(self,
-                      ani=1.,             # only get hits with this ani or less
-                      batch=None          # only get hits from this batch (None == all)
+    def testSomething(self
                       ):
-        # get an interface to the DB
-        VI = ViewInterface(self.dbFileName)
-
-        # build the condition we want to select on and get the hit data
-        C = Condition("ani_comp", "<=", ani)
-        if batch is not None:
-            C = Condition(C, "and", Condition("batch", "=", batch))
-
-        hits = VI.getHitData(C)
-        print hits
+        print self.hits
+        #print self.hits.identityAni
         
-
+        
+    def scatterPlot(self,
+                    showPlot,
+                    imageFormat, 
+                    xlabel, 
+                    ylabel, 
+                    title, 
+                    outFile, 
+                    dpi, 
+                    labelFontSize, 
+                    markerStyle, 
+                    edgeColour
+                    ):
+        """Produce a scatter plot"""
+        IPS = ImagePropertiesScatter(showPlot,
+                                     imageFormat, 
+                                     xlabel, 
+                                     ylabel, 
+                                     title, 
+                                     outFile, 
+                                     dpi, 
+                                     labelFontSize, 
+                                     markerStyle, 
+                                     edgeColour
+                                     )    
+        self.PLOT.makeScatterPlot()
+    
+    def networkPlot(self,
+                    showPlot,
+                    imageFormat, 
+                    xlabel, 
+                    ylabel, 
+                    title, 
+                    outFile, 
+                    dpi, 
+                    labelFontSize, 
+                    markerStyle, 
+                    edgeColour,
+                    nodeColour, # colour of nodes, can be array of colours of len(x)
+                    nodeFontColour, # colour of node labels
+                    nodeFontSize, # size of node labels 
+                    nodeLabels # labels on/off
+                    ):
+        """Produce a network plot"""
+        IPN = ImagePropertiesNetwork(showPlot,
+                                     imageFormat, 
+                                     xlabel, 
+                                     ylabel, 
+                                     title, 
+                                     outFile, 
+                                     dpi, 
+                                     labelFontSize, 
+                                     markerStyle, 
+                                     edgeColour,
+                                     nodeColour, # colour of nodes, can be array of colours of len(x)
+                                     nodeFontColour, # colour of node labels
+                                     nodeFontSize, # size of node labels 
+                                     nodeLabels # labels on/off
+                                     )
+    
+        self.PLOT.makeNetworkPlot()
+    
+    def frequencyPlot(self,
+                      showPlot,
+                      imageFormat, 
+                      xlabel, 
+                      ylabel, 
+                      title, 
+                      outFile, 
+                      dpi, 
+                      labelFontSize, 
+                      markerStyle, 
+                      edgeColour
+                      ):
+        """Produce a frequency plot"""
+        IPF = ImagePropertiesFrequency(showPlot,
+                                       imageFormat, 
+                                       xlabel, 
+                                       ylabel, 
+                                       title, 
+                                       outFile, 
+                                       dpi, 
+                                       labelFontSize, 
+                                       markerStyle, 
+                                       edgeColour
+                                       )
+        self.PLOT.makeFrequencyPlot()
+    
     def connect(self):
         """Try connect to the TrackM server"""
         pass

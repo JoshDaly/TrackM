@@ -170,7 +170,7 @@ class HitData(object):
         # this should work every time
         if incCount:
             self.hitCounts[gid1][gid2] += 1
-
+    
     def getAniDist(self):
         hit_anis = []
         miss_anis = []
@@ -213,7 +213,7 @@ class HitData(object):
         print raw_hits
 
         return (ret_hit_line, ret_miss_line, ret_hit_moutain, ret_miss_mountain)
-
+    
     def addANIIdentity(self,
                        gid1,
                        gid2,
@@ -233,7 +233,7 @@ class HitData(object):
         return [i for i in self.workingIds.keys() if self.workingIds[i]]
 
     def __str__(self):
-        print self.getAniDist()
+        #print self.getAniDist()
         ret_str = "********************************************************************\n"
         ret_str += "Total genomes in hits: %d\n" % len(self.workingIds)
         ret_str += "********************************************************************"

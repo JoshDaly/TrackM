@@ -129,9 +129,14 @@ class ViewInterface(Interface):
 
         pids = tuple([i[0] for i in rows])
 
-        # get all the hits for these guys
-        C = Condition("pid", "in", "("+", ".join(["?" for _ in pids])+")")
-        hits = self.select("hits", ['pid', 'len_1', 'len_2'], condition=C, values=pids)
+        # get all the hits for these guys (split into chunks to avoid SQL issues)
+        hits = []
+        chunk_size = 200
+        chunks = (len(pids) + (chunk_size - 1))/chunk_size
+        for i in xrange(0, chunks):
+ 	    chunk = pids[(i * chunk_size):min(len(pids), ((i + 1) * chunk_size))]
+            C = Condition("pid", "in", "("+", ".join(["?" for _ in chunk])+")")
+            hits += self.select("hits", ['pid', 'len_1', 'len_2'], condition=C, values=chunk)
 
         self.disconnect()
 
