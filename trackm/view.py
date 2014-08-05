@@ -43,7 +43,9 @@ __status__ = "Dev"
 # system imports
 import math
 import numpy as np
-
+import networkx as nx
+import matplotlib.pyplot as plt
+np.seterr(all='raise')
 # local imports
 from trackm.viewInterface import ViewInterface, Condition
 
@@ -58,14 +60,12 @@ class ImagePropertiesGeneral(object):
     def __init__(self,
                  showPlot,
                  imageFormat,
-                 xlabel,
-                 ylabel,
+                 xLabel,
+                 yLabel,
                  title,
                  outFile,
                  dpi,
                  labelFontSize,
-                 markerStyle,
-                 markerSize,
                  edgeColour
                  ):
         self.showPlot      = showPlot
@@ -76,8 +76,6 @@ class ImagePropertiesGeneral(object):
         self.outFile       = outFile
         self.dpi           = dpi 
         self.labelFontSize = labelFontSize
-        self.markerStyle   = markerStyle
-        self.markerSize    = markerSize
         self.edgeColour    = edgeColour 
 
 class ImagePropertiesFrequency(ImagePropertiesGeneral):
@@ -85,17 +83,19 @@ class ImagePropertiesFrequency(ImagePropertiesGeneral):
     def __init__(self,
                  showPlot,
                  imageFormat, 
-                 xlabel, 
-                 ylabel, 
+                 xLabel, 
+                 yLabel, 
                  title, 
                  outFile, 
                  dpi, 
                  labelFontSize, 
                  markerStyle, 
+                 markerSize,
                  edgeColour
                  ):
-        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
-        
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xLabel, yLabel, title, outFile, dpi, labelFontSize, edgeColour)
+        self.markerStyle   = markerStyle
+        self.markerSize    = markerSize
 
         
 class ImagePropertiesScatter(ImagePropertiesGeneral):
@@ -103,41 +103,53 @@ class ImagePropertiesScatter(ImagePropertiesGeneral):
     def __init__(self,
                  showPlot,
                  imageFormat, 
-                 xlabel, 
-                 ylabel, 
+                 xLabel, 
+                 yLabel, 
                  title, 
                  outFile, 
                  dpi, 
                  labelFontSize, 
                  markerStyle, 
+                 markerSize,
                  edgeColour
                  ):
-        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
-        
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xLabel, yLabel, title, outFile, dpi, labelFontSize, edgeColour)
+        self.markerStyle   = markerStyle
+        self.markerSize    = markerSize
         
 class ImagePropertiesNetwork(ImagePropertiesGeneral):
     """options specific for network plot """
     def __init__(self,
                  showPlot,
                  imageFormat, 
-                 xlabel, 
-                 ylabel, 
+                 xLabel, 
+                 yLabel, 
                  title, 
                  outFile, 
                  dpi, 
                  labelFontSize, 
-                 markerStyle, 
+                 nodeShape,
+                 nodeSize, 
                  edgeColour,
                  nodeColour, # colour of nodes, can be array of colours of len(x)
                  nodeFontColour, # colour of node labels
                  nodeFontSize, # size of node labels 
                  nodeLabels # labels on/off
                  ):
-        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xlabel, ylabel, title, outFile, dpi, labelFontSize, markerStyle, edgeColour)
-        self.nodeColour     = nodeColour
+        ImagePropertiesGeneral.__init__(self, showPlot, imageFormat, xLabel, yLabel, title, outFile, dpi, labelFontSize, edgeColour)
+        self.nodeColour      = nodeColour
         self.nodeFontColour  = nodeFontColour
         self.nodeFontSize    = nodeFontSize
         self.nodeLabels      = nodeLabels      
+        self.nodeSize        = nodeSize
+        self.nodeShape       = nodeShape
+
+
+    def __str__(self):
+        print "****************************************"
+        print self.dpi
+        print self.imageFormat
+
 
 ###############################################################################
 ###############################################################################
@@ -147,9 +159,10 @@ class ImagePropertiesNetwork(ImagePropertiesGeneral):
 
 class Plotter(object):
     """Class for plotting functions
-    Scatter
-    Network
-    Frequency"""
+       Scatter
+       Network
+       Frequency
+    """
     
     def __init__(self,
                  hitData):
@@ -177,11 +190,11 @@ class Plotter(object):
         """ Produce scatter plot """
         xs = []         # hits
         ys = []         # cumulative contigs lengths
-        workingIds = [] # master list of genome tree ids
+        workingIds = self.HD.workingIds # master list of genome tree ids
 
         #Plot labels
-        plt.xlabel(IPS.xLabel)
-        plt.ylabel(IPS.yLabel)
+        plt.xLabel(IPS.xLabel)
+        plt.yLabel(IPS.yLabel)
         plt.title(IPS.title)
         #ax.grid(b=True,which='both')
 
@@ -219,24 +232,54 @@ class Plotter(object):
             plt.savefig(IPS.outFile,dpi=IPS.dpi,format=IPS.imageFormat)
 
 
-    def makeNetworkPlot(self):
+    def makeNetworkPlot(self,
+                        showPlot,
+                        imageFormat, 
+                        xLabel, 
+                        yLabel, 
+                        title, 
+                        outFile, 
+                        dpi, 
+                        labelFontSize, 
+                        nodeShape, 
+                        nodeSize,
+                        edgeColour,
+                        nodeColour, # colour of nodes, can be array of colours of len(x)
+                        nodeFontColour, # colour of node labels
+                        nodeFontSize, # size of node labels 
+                        nodeLabels, # labels on/off
+                        ):
         """Produces a network plots with nodes representing individual genomes
 
            and edges representing an LGT event between the two gneomes
         """
         # objects
-        IPN = ImagePropertiesNetwork()
-        
-        HD = HitData()
+        IPN = ImagePropertiesNetwork(showPlot,
+                                     imageFormat, 
+                                     xLabel, 
+                                     yLabel, 
+                                     title, 
+                                     outFile, 
+                                     dpi, 
+                                     labelFontSize, 
+                                     nodeShape, 
+                                     nodeSize,
+                                     edgeColour,
+                                     nodeColour, # colour of nodes, can be array of colours of len(x)
+                                     nodeFontColour, # colour of node labels
+                                     nodeFontSize, # size of node labels 
+                                     nodeLabels, # labels on/off
+                                     )
+
         """Creating the network graph"""
         G=nx.Graph()
-        G.add_nodes_from(self.workingIDs)
+        G.add_nodes_from(self.HD.workingIds)
         # graph variables
         edgeWidth=[]
         edgeColour=[]
         phylumCols = []
-        for id_1 in self.HD.hits.keys():
-            for id_2 in self.HD.hits[id_1]:
+        for id_1 in self.HD.hitCounts.keys():
+            for id_2 in self.HD.hitCounts[id_1]:
                 #print id_1,id_2,str(self.hits[id_1][id_2])
                 G.add_edge(id_1,id_2) # loop through dict, and add edges
 
@@ -248,49 +291,144 @@ class Plotter(object):
 
         pos= nx.spring_layout(G)
         #nx.draw(G,pos,node_color=values,with_labels=args.labels,width=edgeWidth,font_size=12,font_color='#006400')
-        nx.draw(G,pos,with_labels=IPN.nodeLabels,font_size=IPN.nodeFontSize,font_color=IPN.nodeFontColour)
+        nx.draw(G,pos,with_labels=IPN.nodeLabels,font_size=IPN.nodeFontSize,font_color=IPN.nodeFontColour, node_color = IPN.nodeColour, node_size = IPN.nodeSize)
         #nx.draw(G,pos)
-        if args.show_plot:
+        if showPlot:
             plt.show()
         else:
             plt.savefig(IPS.outFile,dpi=IPS.dpi,format=IPS.imageFormat)
         
         
 
-    def makeFrequencyPlot(self):
+    def makeFrequencyPlot(self,
+                          showPlot,
+                          imageFormat,
+                          xLabel,
+                          yLabel,
+                          title,
+                          outFile,
+                          dpi,
+                          labelFontSize,
+                          markerStyle, 
+                          markerSize,
+                          edgeColour
+                          ):
         """Produces a line graph showing the frequency of LGT between genomes
 
            per 100 comparisons relative the ANI distance between the two genomes
 
         NEEDS TO INCORPORATE ALL COMPARISONS, NOT JUST THE ONES THAT HAD AN LGT EVENT!!!!
         """
+        
+        """
+        hitData objects:
+        self.hitCounts          = {} # dict to store hit data
+        self.hitLengthTotals    = {} # dict to store length data
+        self.workingIds         = {} # dict used Ids { gid -> bool } True == has hit
+        self.identityAni        = {} # dict to store ANI distance
+        """
+        
         # objects
-        IPF = ImagePropertiesFrequency()
+        IPF = ImagePropertiesFrequency(showPlot,
+                                       imageFormat,
+                                       xLabel,
+                                       yLabel,
+                                       title,
+                                       outFile,
+                                       dpi,
+                                       labelFontSize,
+                                       markerStyle, 
+                                       markerSize,
+                                       edgeColour)
+        roundedAllComparisonsDec = {} # dict to store no. of comparisons at each ANI, to the decimal
+        roundedAllComparisonsInt = {} # dict to store no. of comparisons at each ANI, to the integer
+        percentListInt           = []
+        percentListDec           = []
+        roundedHitsInt           = {}
+        roundedHitsDec           = {}
+
+        # create total number of comparisons dict
+        for id1 in self.HD.identityAni.keys():
+            for id2 in self.HD.identityAni[id1]:
+                if float(self.HD.identityAni[id1][id2]) != -1.0: 
+                    try:
+                        roundedAllComparisonsDec[round(float(self.HD.identityAni[id1][id2]),1)] += 1
+                    except KeyError:
+                        roundedAllComparisonsDec[round(float(self.HD.identityAni[id1][id2]),1)] = 1 
+                    
+                    try:
+                        roundedAllComparisonsInt[math.ceil(float(self.HD.identityAni[id1][id2]))] += 1
+                    except KeyError:
+                        roundedAllComparisonsInt[math.ceil(float(self.HD.identityAni[id1][id2]))] = 1
+                    if round(float(self.HD.identityAni[id1][id2]),1) not in  percentListDec:
+                        percentListDec.append(round(float(self.HD.identityAni[id1][id2]),1))
+                    if math.ceil(float(self.HD.identityAni[id1][id2])) not in percentListInt:
+                        percentListInt.append(math.ceil(float(self.HD.identityAni[id1][id2])))
+                    
+        # create total number of hits at each percentage
+        for id1 in self.HD.hitCounts.keys():
+            for id2 in self.HD.hitCounts[id1]:
+                try: 
+                    roundedHitsInt[math.ceil(float(self.HD.identityAni[id1][id2]))] += self.HD.hitCounts[id1][id2]
+                except KeyError:
+                    roundedHitsInt[math.ceil(float(self.HD.identityAni[id1][id2]))] = self.HD.hitCounts[id1][id2]
+                try:
+                    roundedHitsDec[round(float(self.HD.identityAni[id1][id2]),1)] += self.HD.hitCounts[id1][id2]
+                except KeyError:
+                    roundedHitsDec[round(float(self.HD.identityAni[id1][id2]),1)] = self.HD.hitCounts[id1][id2]                    
+                    
+        percentListInt.sort()
+        percentListDec.sort()
+        
+        intList = np.arange(0,96,1)
+        decList = np.arange(0,96,0.1)
+        
+        percentListIntY = []
+        percentListDecY = []
+        
+        percentHitsIntY = []
+        percentHitsDecY = []
+        
+        # append zeros to lists
+        for i in range(96):
+            percentListIntY.append(0)
+            percentHitsIntY.append(0)
+        #for i in range(96):
+        #    percentListDecY.append(0)
+        #    percentHitsDecY.append(0)
+        
+        for i,v in enumerate(intList):
+            try:
+                percentListIntY[i] = roundedAllComparisonsInt[v]
+            except KeyError:
+                pass
+        
+        #for i,v in enumerate(decList):
+        #    try:
+        #        percentListDecY[i] = roundedAllComparisonsDec[v]
+        #    except KeyError:
+        #        pass
         
         
-        DFP = DistanceFileParser()
-        IDFP = IDFileParser()
-        self.DD = DistanceData()
-
-        # read in id look up file
-        with open(lookUpFile,'r') as fh:
-            for hit in IDFP.readFile(fh):
-                self.DD.addIDS(hit[IDFP._IMG_ID], hit[IDFP._GT_ID])
-
-        # read in comparisons file
-        with open(comparisonsFile,'r') as fh:
-            for hit in DFP.readFile(fh):
-                 self.DD.addComparison(hit[DFP._IMG_ID_1], hit[DFP._IMG_ID_2], hit[DFP._IDENTITY_16S])
-        self.DD.collapse16S() # calculate no. of comparisons at each rounded 16S distance
-
-        # read in dirty hit file
-        DHFP = DirtyHitFileParser()
-
-        with open(dirtyFile,'r') as fh:
-            for hit in DHFP.readHit(fh):
-                self.DD.addDirtyHit(hit[DHFP._ID_1], hit[DHFP._ID_2])
-        self.DD.getDirty16S() # creates 16S -> hits
-
+        # get y values for hits
+        for i,perc in enumerate(intList):
+            try:
+                c = roundedAllComparisonsInt[perc] / float(100)
+                percentHitsIntY[perc] = roundedHitsInt[perc] / float(c)
+                #print perc, roundedAllComparisonsInt[perc], roundedHitsInt[perc], percentHitsIntY[perc]
+            except KeyError:
+                pass
+        
+        # plot 
+        plt.scatter(intList, percentHitsIntY, marker='|')
+        plt.plot(intList, percentHitsIntY, linestyle='-')
+        
+        # plot no. of comparisons
+        plt.plot(intList,percentListIntY,c='#FFFFFF')
+        plt.fill_between(intList, percentListIntY, 1e-6, facecolor = '#C0C0C0')
+        plt.axis([100,-5,0,max(percentHitsIntY)+10])
+        #plt.show()
+        
         #normalise hits per 100 comparisons
         percList = self.DD.roundedComparisons.keys() # list of percentages in DistanceData
         percList.sort()
@@ -356,8 +494,8 @@ class Plotter(object):
         for i in range(len(x)):
             plt.plot([x[i],x[i]],[y[i]-standardised[i],y[i]+standardised[i]],'k')
         plt.axis([100,75,0,80])
-        plt.xlabel('16S distance (%)')
-        plt.ylabel('LGT per 100 comparisons')
+        plt.xLabel('16S distance (%)')
+        plt.yLabel('LGT per 100 comparisons')
         plt.show() # plot 
     
 
@@ -370,7 +508,7 @@ class View(object):
     """visualise database"""
     def __init__(self,
                  dbFileName,
-                 ani=0.95,
+                 ani=95,
                  batch=None
                  ):
         # get an interface to the DB
@@ -393,35 +531,47 @@ class View(object):
         self.serverURL = serverURL
         self.serverPort = serverPort
         """
-        
+        """
+        hitData objects:
+        self.hitCounts          = {} # dict to store hit data
+        self.hitLengthTotals    = {} # dict to store length data
+        self.workingIds         = {} # dict used Ids { gid -> bool } True == has hit
+        self.identityAni        = {} # dict to store ANI distance
+        """
     def testSomething(self
                       ):
-        print self.hits
+        count = 0 
+        #for key in self.hits.hitCounts.keys():
+        #    for key2 in self.hits.hitCounts[key]:
+        #        print key, key2, self.hits.hitCounts[key][key2]
+                
         #print self.hits.identityAni
         
         
     def scatterPlot(self,
                     showPlot,
                     imageFormat, 
-                    xlabel, 
-                    ylabel, 
+                    xLabel, 
+                    yLabel, 
                     title, 
                     outFile, 
                     dpi, 
                     labelFontSize, 
-                    markerStyle, 
+                    markerStyle,
+                    markerSize, 
                     edgeColour
                     ):
         """Produce a scatter plot"""
         IPS = ImagePropertiesScatter(showPlot,
                                      imageFormat, 
-                                     xlabel, 
-                                     ylabel, 
+                                     xLabel, 
+                                     yLabel, 
                                      title, 
                                      outFile, 
                                      dpi, 
                                      labelFontSize, 
-                                     markerStyle, 
+                                     markerStyle,
+                                     markerSize, 
                                      edgeColour
                                      )    
         self.PLOT.makeScatterPlot()
@@ -429,13 +579,14 @@ class View(object):
     def networkPlot(self,
                     showPlot,
                     imageFormat, 
-                    xlabel, 
-                    ylabel, 
+                    xLabel, 
+                    yLabel, 
                     title, 
                     outFile, 
                     dpi, 
                     labelFontSize, 
-                    markerStyle, 
+                    nodeShape,
+                    nodeSize, 
                     edgeColour,
                     nodeColour, # colour of nodes, can be array of colours of len(x)
                     nodeFontColour, # colour of node labels
@@ -443,49 +594,50 @@ class View(object):
                     nodeLabels # labels on/off
                     ):
         """Produce a network plot"""
-        IPN = ImagePropertiesNetwork(showPlot,
-                                     imageFormat, 
-                                     xlabel, 
-                                     ylabel, 
-                                     title, 
-                                     outFile, 
-                                     dpi, 
-                                     labelFontSize, 
-                                     markerStyle, 
-                                     edgeColour,
-                                     nodeColour, # colour of nodes, can be array of colours of len(x)
-                                     nodeFontColour, # colour of node labels
-                                     nodeFontSize, # size of node labels 
-                                     nodeLabels # labels on/off
-                                     )
     
-        self.PLOT.makeNetworkPlot()
+        self.PLOT.makeNetworkPlot(showPlot,
+                                  imageFormat, 
+                                  xLabel, 
+                                  yLabel, 
+                                  title, 
+                                  outFile, 
+                                  dpi, 
+                                  labelFontSize, 
+                                  nodeShape, 
+                                  nodeSize,
+                                  edgeColour,
+                                  nodeColour, # colour of nodes, can be array of colours of len(x)
+                                  nodeFontColour, # colour of node labels
+                                  nodeFontSize, # size of node labels 
+                                  nodeLabels # labels on/off
+                                  )
     
     def frequencyPlot(self,
                       showPlot,
                       imageFormat, 
-                      xlabel, 
-                      ylabel, 
+                      xLabel, 
+                      yLabel, 
                       title, 
                       outFile, 
                       dpi, 
                       labelFontSize, 
-                      markerStyle, 
+                      markerStyle,
+                      markerSize, 
                       edgeColour
                       ):
         """Produce a frequency plot"""
-        IPF = ImagePropertiesFrequency(showPlot,
-                                       imageFormat, 
-                                       xlabel, 
-                                       ylabel, 
-                                       title, 
-                                       outFile, 
-                                       dpi, 
-                                       labelFontSize, 
-                                       markerStyle, 
-                                       edgeColour
-                                       )
-        self.PLOT.makeFrequencyPlot()
+
+        self.PLOT.makeFrequencyPlot(showPlot,
+                      imageFormat, 
+                      xLabel, 
+                      yLabel, 
+                      title, 
+                      outFile, 
+                      dpi, 
+                      labelFontSize, 
+                      markerStyle,
+                      markerSize, 
+                      edgeColour)
     
     def connect(self):
         """Try connect to the TrackM server"""

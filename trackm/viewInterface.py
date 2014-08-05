@@ -121,23 +121,20 @@ class ViewInterface(Interface):
 
         ret_HD = HitData()
         self.connect()
-
-        # get all pirs that match the ani cutoff
+        
         rows = self.select('pairs', ['pid', 'ani_comp', 'gid_1', 'gid_2'], condition=condition)
         if len(rows) == 0:
             return ret_HD
 
-        pids = tuple([i[0] for i in rows])
+        
 
-        # get all the hits for these guys (split into chunks to avoid SQL issues)
-        hits = []
-        chunk_size = 200
-        chunks = (len(pids) + (chunk_size - 1))/chunk_size
-        for i in xrange(0, chunks):
- 	    chunk = pids[(i * chunk_size):min(len(pids), ((i + 1) * chunk_size))]
-            C = Condition("pid", "in", "("+", ".join(["?" for _ in chunk])+")")
-            hits += self.select("hits", ['pid', 'len_1', 'len_2'], condition=C, values=chunk)
-
+        print condition
+        select_str = "SELECT hits.pid, len_1, len_2 FROM hits INNER JOIN pairs ON pairs.pid = hits.pid WHERE %s" % str(condition)
+        print select_str
+        cur = self.db.getCursor()
+        cur.execute(select_str)
+        hits = cur.fetchall()
+        
         self.disconnect()
 
         # make a tmp dict of pid -> cidTuple
@@ -150,15 +147,18 @@ class ViewInterface(Interface):
             ret_HD.addHit(key[0], key[1], 0)                # cal with length 0 to initialise an empty hit between these two genomes
             ret_HD.addANIIdentity(key[0], key[1], row[1])   # add the identity for this pair
 
+
+
         # now parse the hits
         for hit in hits:
+            print hit
             length = np.mean(hit[1:])              # mean length used here
             key = pid_lookup[hit[0]]               # get the key (gid1, gid2)
             ret_HD.addHit(key[0], key[1], length)  # add the length (increments hit count)
             ret_HD.workingIds[key[0]] = True       # we've seen these guys now
             ret_HD.workingIds[key[1]] = True
 
-
+        
 
 
         return ret_HD

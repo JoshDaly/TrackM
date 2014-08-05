@@ -126,19 +126,44 @@ def doWork(args):
         print "*******************************************************************************"
         
         if args.view_parser_name == 'scatter':
-            print "                          Type :  Scatter plot                                 "
+            print "                          Mode :  Scatter plot                                 "
             print "*******************************************************************************"
             V.scatterPlot()
             
         elif args.view_parser_name == 'frequency':            
-            print "                          Type : Frequency plot                                "
+            print "                          Mode : Frequency plot                                "
             print "*******************************************************************************"
-            V.frequencyPlot()
+            V.frequencyPlot(args.showPlot,
+                            args.imageFormat,
+                            args.xLabel,
+                            args.yLabel,
+                            args.title,
+                            args.outFile,
+                            args.dpi,
+                            args.labelFontSize,
+                            args.markerStyle, 
+                            args.markerSize,
+                            args.edgeColour
+                            )
                             
         elif args.view_parser_name == 'network':
-            print "                          Type : Network plot                                  "
+            print "                          Mode : Network plot                                  "
             print "*******************************************************************************"
-            V.networkPlot()
+            V.networkPlot(args.showPlot,
+                          args.imageFormat,
+                          args.xLabel,
+                          args.yLabel,
+                          args.title,
+                          args.outFile,
+                          args.dpi,
+                          args.labelFontSize,
+                          args.nodeShape,
+                          args.nodeSize,
+                          args.edgeColour,
+                          args.nodeColour, 
+                          args.nodeFontColour,
+                          args.nodeFontSize,  
+                          args.nodeLabels)
             
         elif args.view_parser_name == 'test':
             # test
@@ -272,13 +297,14 @@ if __name__ == '__main__':
     scatter_parser.add_argument("db", help="Path to the TrackM database to use")
     scatter_parser.add_argument("--showPlot", help="Display plot on screen. True or False")
     scatter_parser.add_argument("--imageFormat", help="Format of output file e.g. png, svg etc.")
-    scatter_parser.add_argument("--xlabel", help="x-axis label.")
-    scatter_parser.add_argument("--ylabel", help="y-axis label.")
+    scatter_parser.add_argument("--xLabel", help="x-axis label.")
+    scatter_parser.add_argument("--yLabel", help="y-axis label.")
     scatter_parser.add_argument("--title", help="Set plot title.")
     scatter_parser.add_argument("--outFile", help="Output file name.")
     scatter_parser.add_argument("--dpi", type=int, help="Set dots per inch (dpi) of image.")
     scatter_parser.add_argument("--labelFontSize", type=int, help="Set the font size for the x and y axis labels.")
     scatter_parser.add_argument("--markerStyle", help="Set the marker style e.g. '+', '|', 'o' etc. ")
+    scatter_parser.add_argument("--markerSize", type=int, help="Set the marker size.")
     scatter_parser.add_argument("--edgeColour", help="Set the colour of the edges. Single colour or array of colours.")
     
     
@@ -287,20 +313,21 @@ if __name__ == '__main__':
                                                help='Make network plots',
                                                description='Plot some stuff')
     network_parser.add_argument("db", help="Path to the TrackM database to use")
-    network_parser.add_argument("--showPlot", help="Display plot on screen. True or False")
-    network_parser.add_argument("--imageFormat", help="Format of output file e.g. png, svg etc.")
-    network_parser.add_argument("--xlabel", help="x-axis label.")
-    network_parser.add_argument("--ylabel", help="y-axis label.")
-    network_parser.add_argument("--title", help="set plot title.")
-    network_parser.add_argument("--outFile", help="Output file name.")
-    network_parser.add_argument("--dpi", type=int, help="Set dots per inch (dpi) of image.")
-    network_parser.add_argument("--labelFontSize", type=int, help="Set the font size for the x and y axis labels.")
-    network_parser.add_argument("--markerStyle", help="Set the marker style e.g. '+', '|', 'o' etc. ")
-    network_parser.add_argument("--edgeColour", help="Set the colour of the edges. Single colour or array of colours.")
-    network_parser.add_argument("--nodeColour", help="Set the colour of the nodes. Single colour or array of colours.")
-    network_parser.add_argument("--nodeFontColour", help="Set the colour for the node labels.")
-    network_parser.add_argument("--nodeFontSize", type=int, help="Set the font size for the node labels.")
-    network_parser.add_argument("--nodeLabels", help="Display node labels. True or False.")
+    network_parser.add_argument("--showPlot", default = False, help="Display plot on screen. True or False")
+    network_parser.add_argument("--imageFormat", default = 'png', help="Format of output file e.g. png, svg etc.")
+    network_parser.add_argument("--xLabel", default = False, help="x-axis label.")
+    network_parser.add_argument("--yLabel", default= False, help="y-axis label.")
+    network_parser.add_argument("--title", default="Network Plot", help="set plot title.")
+    network_parser.add_argument("--outFile", default = "networkPlot",help="Output file name.")
+    network_parser.add_argument("--dpi", type=int, default=400, help="Set dots per inch (dpi) of image.")
+    network_parser.add_argument("--labelFontSize", type=int, default = 12,help="Set the font size for the x and y axis labels.")
+    network_parser.add_argument("--nodeSize", type=int, default = 300,help="Set size of the node")
+    network_parser.add_argument("--nodeShape", default = 'o',help="Set the node shape e.g. '+', '|', 'o' etc. ")
+    network_parser.add_argument("--edgeColour", default = "black", help="Set the colour of the edges. Single colour or array of colours.")
+    network_parser.add_argument("--nodeColour", default = "red", help="Set the colour of the nodes. Single colour or array of colours.")
+    network_parser.add_argument("--nodeFontColour", default = "black",help="Set the colour for the node labels.")
+    network_parser.add_argument("--nodeFontSize", default = 12,type=int, help="Set the font size for the node labels.")
+    network_parser.add_argument("--nodeLabels", default = False, help="Display node labels. True or False.")
     
     
     frequency_parser = view_subparsers.add_parser('frequency',
@@ -308,17 +335,18 @@ if __name__ == '__main__':
                                                  help='Make frequency plots',
                                                  description='Shows the rate of lateral gene transfer normalised to the number of comparisons')
     frequency_parser.add_argument("db", help="Path to the TrackM database to use")
-    frequency_parser.add_argument("--showPlot", help="Display plot on screen. True or False")
-    frequency_parser.add_argument("--imageFormat", help="Format of output file e.g. png, svg etc.")
-    frequency_parser.add_argument("--xlabel", help="x-axis label.")
-    frequency_parser.add_argument("--ylabel", help="y-axis label.")
-    frequency_parser.add_argument("--title", help="set plot title.")
-    frequency_parser.add_argument("--outFile", help="Output file name.")
-    frequency_parser.add_argument("--dpi", type=int, help="Set dots per inch (dpi) of image.")
-    frequency_parser.add_argument("--labelFontSize", type=int, help="Set the font size for the x and y axis labels.")
-    frequency_parser.add_argument("--markerStyle", help="Set the marker style e.g. '+', '|', 'o' etc. ")
-    frequency_parser.add_argument("--edgeColour", help="Set the colour of the edges. Single colour or array of colours.")
-
+    frequency_parser.add_argument("--showPlot", default = False, help="Display plot on screen. True or False")
+    frequency_parser.add_argument("--imageFormat", default= 'png', help="Format of output file e.g. png, svg etc.")
+    frequency_parser.add_argument("--xLabel", default=False, help="x-axis label.")
+    frequency_parser.add_argument("--yLabel", default=False, help="y-axis label.")
+    frequency_parser.add_argument("--title", default= 'Frequency plot', help="set plot title.")
+    frequency_parser.add_argument("--outFile", default="frequencyPlot", help="Output file name.")
+    frequency_parser.add_argument("--dpi", type=int, default=400, help="Set dots per inch (dpi) of image.")
+    frequency_parser.add_argument("--labelFontSize", default=12, type=int, help="Set the font size for the x and y axis labels.")
+    frequency_parser.add_argument("--markerStyle", default= 'o', help="Set the marker style e.g. '+', '|', 'o' etc. ")
+    frequency_parser.add_argument("--markerSize", default=12 , type=int, help="Set the marker size.")
+    frequency_parser.add_argument("--edgeColour", default='black', help="Set the colour of the edges. Single colour or array of colours.")
+    
 
     test_parser = view_subparsers.add_parser('test',
                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter,
