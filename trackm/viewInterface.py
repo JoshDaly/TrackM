@@ -128,36 +128,53 @@ class ViewInterface(Interface):
 
         
 
-        print condition
-        select_str = "SELECT hits.pid, len_1, len_2 FROM hits INNER JOIN pairs ON pairs.pid = hits.pid WHERE %s" % str(condition)
+        #print condition
+        #select_str = "SELECT hits.pid, len_1, len_2 FROM hits INNER JOIN pairs ON pairs.pid = hits.pid WHERE %s" % str(condition)
+        select_str = "SELECT hits.pid, len_1, len_2 FROM hits INNER JOIN pairs ON pairs.pid = hits.pid WHERE pairs.ani_comp <= 95 AND hits.ident >= 99 AND hits.len_1 >= 500 AND hits.len_2 >= 500"
+        #select_str = "SELECT hits.pid, seqs.sqid, seqs.seq FROM hits INNER JOIN seqs ON seqs.sqid = hits.sqid_1 INNER JOIN pairs ON pairs.pid = hits.pid WHERE hits.ident >= 99 AND hits.len_1 >= 500 AND hits.len_2 >= 500"
+        #select_str = "SELECT hits.pid, seqs.sqid, seqs.seq FROM hits INNER JOIN seqs ON seqs.sqid = hits.sqid_2 INNER JOIN pairs ON pairs.pid = hits.pid WHERE hits.ident >= 99 AND hits.len_1 >= 500 AND hits.len_2 >= 500"
+        
         print select_str
         cur = self.db.getCursor()
         cur.execute(select_str)
         hits = cur.fetchall()
         
         self.disconnect()
-
         # make a tmp dict of pid -> cidTuple
+
         pid_lookup = {}
         for row in rows:
             key = ret_HD.makeKey(row[2],row[3])
-            pid_lookup[row[0]] = key
+            ret_HD.makeLookUp(row[0],key)
+            #pid_lookup[row[0]] = key
             ret_HD.workingIds[key[0]] = False               # we've seen these guys now
             ret_HD.workingIds[key[1]] = False
             ret_HD.addHit(key[0], key[1], 0)                # cal with length 0 to initialise an empty hit between these two genomes
             ret_HD.addANIIdentity(key[0], key[1], row[1])   # add the identity for this pair
-
-
-
-        # now parse the hits
+        """
+        # now parse the seqs
         for hit in hits:
-            print hit
-            length = np.mean(hit[1:])              # mean length used here
+            seq = hit[2]                           # transferred sequence
+            sqid = hit[1]
+            pid = hit[0]
             key = pid_lookup[hit[0]]               # get the key (gid1, gid2)
+            print ">%s_%s" % (pid,sqid) 
+            print seq
+        """ 
+            
+        
+        
+        # now parse the hits
+        print "No. of rows in hits data %d" % len(hits)
+        for hit in hits:
+            #print hit
+            length = np.mean(hit[1:])              # mean length used here
+            key = ret_HD.pidLookUp[hit[0]]
+            #key = pid_lookup[hit[0]]               # get the key (gid1, gid2)
             ret_HD.addHit(key[0], key[1], length)  # add the length (increments hit count)
             ret_HD.workingIds[key[0]] = True       # we've seen these guys now
             ret_HD.workingIds[key[1]] = True
-
+        
         
 
 

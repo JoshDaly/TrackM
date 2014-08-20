@@ -132,6 +132,7 @@ class HitData(object):
         self.hitLengthTotals    = {} # dict to store length data
         self.workingIds         = {} # dict used Ids { gid -> bool } True == has hit
         self.identityAni        = {} # dict to store ANI distance
+        self.pidLookUp          = {} # dict to store pids -> 
 
         #---------
         # OLDER
@@ -139,6 +140,11 @@ class HitData(object):
         self.distance16S        = {} # dict to store 16S distance
         self.roundedDistance    = {} # dict to store rounded 16S distance and total hits per 100 comparisons
         self.standardDeviation  = {} # dict to store standard deviation at each percentage
+
+    def makeLookUp(self,pid,keyTuple):
+        """make pid look up table"""
+        """keyTuple = (gid1, gid2)"""
+        self.pidLookUp[pid] = keyTuple
 
     def makeKey(self, gid1, gid2):
         """Consistent ordering of genome Ids"""
@@ -157,17 +163,23 @@ class HitData(object):
 
         Call this function with lgetLen == 0 to initialise an empty hit
         """
+        try:
+            inner = self.hitLengthTotals[gid1]
+        except KeyError:
+            self.hitLengthTotals[gid1] = {}
+            self.hitCounts[gid1] = {}
+            inner = self.hitLengthTotals[gid1]
+        
         incCount = True
         try:
-            self.hitLengthTotals[gid1][gid2] += lgtLen
+            inner[gid2] += lgtLen
         except KeyError:
-            self.hitLengthTotals[gid1] = {gid2 : lgtLen}
-            incCount = False
+            inner[gid2] = lgtLen
             if lgtLen == 0:
-                self.hitCounts[gid1] = {gid2 : 0}
-            else:
-                self.hitCounts[gid1] = {gid2 : 1}
-        # this should work every time
+                incCount = False
+                self.hitCounts[gid1][gid2] = 0
+
+        # this should work every time (except the first time of course)
         if incCount:
             self.hitCounts[gid1][gid2] += 1
     
