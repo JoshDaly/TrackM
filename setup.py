@@ -5,7 +5,7 @@ setup(
     version='0.2.0',
     author='Josh Daly, Michael Imelfort',
     author_email='joshua.daly@uqconnect.edu.au',
-    packages=['trackm','misc'],
+    packages=['trackm'],
     scripts=['bin/trackm'],
     url='http://pypi.python.org/pypi/TrackM/',
     license='GPLv3',
